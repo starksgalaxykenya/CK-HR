@@ -780,12 +780,13 @@
             top: -20px;
         }
 
-        /* Job Description Styles */
+        /* Job Description Styles - UPDATED */
         .job-description-container {
             background: white;
             border-radius: 12px;
             padding: 25px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
         }
 
         .job-details-grid {
@@ -824,6 +825,55 @@
             position: absolute;
             left: 0;
             top: -2px;
+        }
+
+        /* Editable Job Description Styles */
+        .editable-field {
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+
+        .editable-field:hover {
+            background-color: #f0f9f0;
+        }
+
+        .editable-textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: 10px;
+            border: 2px solid var(--lime-green);
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 14px;
+        }
+
+        .edit-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .job-description-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .empty-state i {
+            font-size: 48px;
+            margin-bottom: 20px;
+            color: #ddd;
         }
 
         /* Calendar Styles */
@@ -1424,23 +1474,44 @@
                 </div>
             </div>
 
-            <!-- Job Descriptions Content -->
+            <!-- Job Descriptions Content - UPDATED -->
             <div id="jobDescriptionsContent" class="page-content" style="display: none;">
                 <div class="content-header">
                     <h1>Job Descriptions</h1>
                     <div>
-                        <select id="jobFilter" class="form-control" style="width: 200px;">
-                            <option value="all">All Positions</option>
-                            <option value="Administrator">Administrator</option>
-                            <option value="Manager">Manager</option>
-                            <option value="Supervisor">Supervisor</option>
-                            <option value="Employee">Employee</option>
-                        </select>
+                        <button class="btn" id="addJobDescriptionBtn" style="display: none;">Add New Job Description</button>
                     </div>
                 </div>
                 
-                <div id="jobDescriptionsContainer">
-                    <!-- Job descriptions will be loaded here -->
+                <!-- View Mode - For Employees -->
+                <div id="employeeJobView" style="display: none;">
+                    <div class="job-description-container">
+                        <h2>My Job Description</h2>
+                        <div id="myJobDescriptionContent">
+                            <!-- Employee's job description will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Admin/HR Management View -->
+                <div id="adminJobView" style="display: none;">
+                    <div class="table-container">
+                        <table id="jobDescriptionsTable">
+                            <thead>
+                                <tr>
+                                    <th>Position Title</th>
+                                    <th>Department</th>
+                                    <th>Reports To</th>
+                                    <th>Last Updated</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Job descriptions will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
@@ -1792,7 +1863,7 @@
             </div>
         </div>
 
-        <!-- Job Description Modal -->
+        <!-- Job Description Modal - UPDATED -->
         <div class="modal" id="jobDescriptionModal">
             <div class="modal-content modal-lg">
                 <div class="modal-header">
@@ -1801,6 +1872,100 @@
                 </div>
                 <div id="jobModalBody">
                     <!-- Job description content will be populated here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Job Description Modal -->
+        <div class="modal" id="editJobDescriptionModal">
+            <div class="modal-content modal-lg">
+                <div class="modal-header">
+                    <h2 class="modal-title" id="editJobModalTitle">Edit Job Description</h2>
+                    <button class="close-modal" id="closeEditJobModal">&times;</button>
+                </div>
+                <div id="editJobModalBody">
+                    <form id="editJobForm">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="editJobTitle">Position Title *</label>
+                                <input type="text" id="editJobTitle" class="form-control" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="editJobDepartment">Department *</label>
+                                <input type="text" id="editJobDepartment" class="form-control" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="editJobReportsTo">Reports To</label>
+                                <input type="text" id="editJobReportsTo" class="form-control" placeholder="e.g., Department Manager">
+                            </div>
+                            <div class="form-group">
+                                <label for="editJobLocation">Location</label>
+                                <input type="text" id="editJobLocation" class="form-control" placeholder="e.g., Nairobi, Kenya">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="editJobSummary">Job Summary *</label>
+                            <textarea id="editJobSummary" class="form-control editable-textarea" required placeholder="Brief overview of the position"></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="editJobResponsibilities">Key Responsibilities *</label>
+                            <textarea id="editJobResponsibilities" class="form-control editable-textarea" required placeholder="List key responsibilities (one per line)"></textarea>
+                            <small>Enter each responsibility on a new line</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="editJobRequirements">Requirements & Qualifications *</label>
+                            <textarea id="editJobRequirements" class="form-control editable-textarea" required placeholder="List requirements (one per line)"></textarea>
+                            <small>Enter each requirement on a new line</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="editJobSkills">Required Skills</label>
+                            <textarea id="editJobSkills" class="form-control editable-textarea" placeholder="List required skills (one per line)"></textarea>
+                            <small>Enter each skill on a new line</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="editJobBenefits">Benefits</label>
+                            <textarea id="editJobBenefits" class="form-control editable-textarea" placeholder="List benefits (one per line)"></textarea>
+                            <small>Enter each benefit on a new line</small>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="editJobEmploymentType">Employment Type</label>
+                                <select id="editJobEmploymentType" class="form-control">
+                                    <option value="Full-time">Full-time</option>
+                                    <option value="Part-time">Part-time</option>
+                                    <option value="Contract">Contract</option>
+                                    <option value="Internship">Internship</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="editJobStatus">Status</label>
+                                <select id="editJobStatus" class="form-control">
+                                    <option value="active">Active</option>
+                                    <option value="inactive">Inactive</option>
+                                    <option value="draft">Draft</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="editJobNotes">Additional Notes</label>
+                            <textarea id="editJobNotes" class="form-control editable-textarea" placeholder="Any additional information"></textarea>
+                        </div>
+                        
+                        <div class="edit-controls">
+                            <button type="submit" class="btn" id="saveJobBtn">Save Job Description</button>
+                            <button type="button" class="btn btn-secondary" id="cancelEditJobBtn">Cancel</button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
@@ -1848,6 +2013,7 @@
         let users = [];
         let notifications = [];
         let allRequests = [];
+        let jobDescriptions = [];
         
         // Calendar State
         let currentMonth = new Date().getMonth();
@@ -1876,28 +2042,32 @@
                 canApproveRequests: true,
                 canViewReports: true,
                 canManageEmployees: true,
-                canCreateRequests: true
+                canCreateRequests: true,
+                canManageJobDescriptions: true
             },
             [ROLES.HR]: {
                 canManageUsers: true,
                 canApproveRequests: true,
                 canViewReports: true,
                 canManageEmployees: true,
-                canCreateRequests: true
+                canCreateRequests: true,
+                canManageJobDescriptions: true
             },
             [ROLES.MANAGER]: {
                 canManageUsers: false,
                 canApproveRequests: true,
                 canViewReports: true,
                 canManageEmployees: false,
-                canCreateRequests: true
+                canCreateRequests: true,
+                canManageJobDescriptions: false
             },
             [ROLES.EMPLOYEE]: {
                 canManageUsers: false,
                 canApproveRequests: false,
                 canViewReports: false,
                 canManageEmployees: false,
-                canCreateRequests: true
+                canCreateRequests: true,
+                canManageJobDescriptions: false
             }
         };
 
@@ -1939,6 +2109,16 @@
         const todayBtn = document.getElementById('todayBtn');
         const currentMonthYearElement = document.getElementById('currentMonthYear');
         const calendarGrid = document.getElementById('calendarGrid');
+
+        // UPDATED: Job Description Elements
+        const employeeJobView = document.getElementById('employeeJobView');
+        const adminJobView = document.getElementById('adminJobView');
+        const addJobDescriptionBtn = document.getElementById('addJobDescriptionBtn');
+        const jobDescriptionsTable = document.getElementById('jobDescriptionsTable');
+        const myJobDescriptionContent = document.getElementById('myJobDescriptionContent');
+        const editJobForm = document.getElementById('editJobForm');
+        const saveJobBtn = document.getElementById('saveJobBtn');
+        const cancelEditJobBtn = document.getElementById('cancelEditJobBtn');
 
         // Holiday Data (Kenyan and Japanese)
         const holidays = {
@@ -2038,6 +2218,10 @@
                 document.getElementById('jobDescriptionModal').style.display = 'none';
             });
 
+            document.getElementById('closeEditJobModal').addEventListener('click', () => {
+                document.getElementById('editJobDescriptionModal').style.display = 'none';
+            });
+
             document.getElementById('closeEventModal').addEventListener('click', () => {
                 document.getElementById('calendarEventModal').style.display = 'none';
             });
@@ -2047,12 +2231,18 @@
             document.getElementById('leaveForm')?.addEventListener('submit', submitLeave);
             document.getElementById('offdayForm')?.addEventListener('submit', submitOffDay);
             document.getElementById('userForm')?.addEventListener('submit', saveUser);
+            editJobForm?.addEventListener('submit', saveJobDescription);
+
+            // UPDATED: Job Description Event Listeners
+            addJobDescriptionBtn?.addEventListener('click', () => openEditJobDescriptionModal());
+            cancelEditJobBtn?.addEventListener('click', () => {
+                document.getElementById('editJobDescriptionModal').style.display = 'none';
+            });
 
             // Filter changes
             document.getElementById('requestFilter')?.addEventListener('change', loadMyRequests);
             document.getElementById('reportPeriod')?.addEventListener('change', loadReports);
             document.getElementById('departmentFilter')?.addEventListener('change', loadOrgChart);
-            document.getElementById('jobFilter')?.addEventListener('change', loadJobDescriptions);
 
             // NEW FEATURES: Enhanced Requisition Form Event Listeners
             if (addItemBtn) {
@@ -2085,6 +2275,7 @@
                     showAppInterface();
                     await loadUsers();
                     loadNotifications();
+                    await loadJobDescriptionsData(); // Load job descriptions data
                 } else {
                     showLoginInterface();
                 }
@@ -2805,131 +2996,40 @@
             }
         }
 
-        // NEW FEATURES: Job Description Functions
+        // UPDATED: Job Description Functions
+        async function loadJobDescriptionsData() {
+            try {
+                const snapshot = await db.collection('jobDescriptions').get();
+                jobDescriptions = [];
+                snapshot.forEach(doc => {
+                    jobDescriptions.push({ id: doc.id, ...doc.data() });
+                });
+                console.log('Loaded job descriptions:', jobDescriptions.length);
+            } catch (error) {
+                console.error('Error loading job descriptions:', error);
+            }
+        }
+
         async function loadJobDescriptions() {
             showLoading('Loading job descriptions...');
+            
             try {
-                const jobFilter = document.getElementById('jobFilter').value;
+                // Show/hide appropriate view based on user role
+                const canManage = checkPermission('canManageJobDescriptions');
                 
-                const jobDescriptions = {
-                    'Administrator': {
-                        title: 'Administrator',
-                        department: 'Management',
-                        summary: 'Oversees all HR operations and system administration.',
-                        responsibilities: [
-                            'Manage user accounts and permissions',
-                            'Oversee system configuration and maintenance',
-                            'Generate reports and analytics',
-                            'Handle escalated HR issues',
-                            'Coordinate with department heads'
-                        ],
-                        requirements: [
-                            'Bachelor\'s degree in HR or related field',
-                            '5+ years of HR experience',
-                            'Strong leadership skills',
-                            'Excellent communication skills',
-                            'Technical proficiency in HR systems'
-                        ],
-                        salaryRange: 'KES 150,000 - 300,000'
-                    },
-                    'Manager': {
-                        title: 'Manager',
-                        department: 'Operations',
-                        summary: 'Manages department operations and team performance.',
-                        responsibilities: [
-                            'Supervise team members',
-                            'Approve requisitions and leave requests',
-                            'Monitor team performance',
-                            'Conduct performance reviews',
-                            'Develop team training programs'
-                        ],
-                        requirements: [
-                            'Bachelor\'s degree in relevant field',
-                            '3+ years of management experience',
-                            'Strong organizational skills',
-                            'Good decision-making abilities',
-                            'Team leadership experience'
-                        ],
-                        salaryRange: 'KES 120,000 - 250,000'
-                    },
-                    'HR Manager': {
-                        title: 'HR Manager',
-                        department: 'Human Resources',
-                        summary: 'Manages human resources functions and employee relations.',
-                        responsibilities: [
-                            'Recruit and onboard new employees',
-                            'Handle employee relations',
-                            'Manage benefits and compensation',
-                            'Ensure compliance with labor laws',
-                            'Develop HR policies and procedures'
-                        ],
-                        requirements: [
-                            'Bachelor\'s degree in Human Resources',
-                            '4+ years of HR experience',
-                            'Knowledge of labor laws',
-                            'Excellent interpersonal skills',
-                            'Recruitment experience'
-                        ],
-                        salaryRange: 'KES 130,000 - 270,000'
-                    },
-                    'Sales Executive': {
-                        title: 'Sales Executive',
-                        department: 'Sales',
-                        summary: 'Drives sales and maintains client relationships.',
-                        responsibilities: [
-                            'Achieve sales targets',
-                            'Maintain client relationships',
-                            'Generate leads and proposals',
-                            'Conduct product demonstrations',
-                            'Prepare sales reports'
-                        ],
-                        requirements: [
-                            'Bachelor\'s degree in Business or Marketing',
-                            '2+ years of sales experience',
-                            'Excellent communication skills',
-                            'Proven sales track record',
-                            'Customer service orientation'
-                        ],
-                        salaryRange: 'KES 80,000 - 180,000 + Commission'
-                    }
-                };
-                
-                const container = document.getElementById('jobDescriptionsContainer');
-                container.innerHTML = '';
-                
-                Object.entries(jobDescriptions).forEach(([title, job]) => {
-                    if (jobFilter === 'all' || jobFilter === title) {
-                        const jobCard = document.createElement('div');
-                        jobCard.className = 'job-description-container';
-                        jobCard.style.marginBottom = '20px';
-                        jobCard.innerHTML = `
-                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 20px;">
-                                <div>
-                                    <h2>${job.title}</h2>
-                                    <p><strong>Department:</strong> ${job.department}</p>
-                                </div>
-                                <button class="btn" onclick="viewJobDescription('${title}')">View Details</button>
-                            </div>
-                            <p><strong>Summary:</strong> ${job.summary}</p>
-                            <div class="job-details-grid">
-                                <div class="job-section">
-                                    <h3>Key Responsibilities</h3>
-                                    <ul>
-                                        ${job.responsibilities.map(resp => `<li>${resp}</li>`).join('')}
-                                    </ul>
-                                </div>
-                                <div class="job-section">
-                                    <h3>Requirements</h3>
-                                    <ul>
-                                        ${job.requirements.map(req => `<li>${req}</li>`).join('')}
-                                    </ul>
-                                </div>
-                            </div>
-                            <p><strong>Salary Range:</strong> ${job.salaryRange}</p>
-                        `;
-                        container.appendChild(jobCard);
-                    }
-                });
+                if (canManage) {
+                    // Admin/HR view - show management interface
+                    employeeJobView.style.display = 'none';
+                    adminJobView.style.display = 'block';
+                    addJobDescriptionBtn.style.display = 'block';
+                    await loadJobDescriptionsTable();
+                } else {
+                    // Employee view - show their own job description
+                    employeeJobView.style.display = 'block';
+                    adminJobView.style.display = 'none';
+                    addJobDescriptionBtn.style.display = 'none';
+                    await loadMyJobDescription();
+                }
                 
                 hideLoading();
             } catch (error) {
@@ -2939,151 +3039,332 @@
             }
         }
 
-        function viewJobDescription(title) {
-            const jobDescriptions = {
-                'Administrator': {
-                    title: 'Administrator',
-                    department: 'Management',
-                    summary: 'Oversees all HR operations and system administration for Cars Kenya.',
-                    responsibilities: [
-                        'Manage user accounts, permissions, and access control',
-                        'Oversee system configuration, maintenance, and updates',
-                        'Generate comprehensive reports and analytics for management',
-                        'Handle escalated HR issues and conflict resolution',
-                        'Coordinate with department heads on staffing needs',
-                        'Ensure data security and privacy compliance',
-                        'Develop and implement HR policies and procedures',
-                        'Manage budget and resource allocation'
-                    ],
-                    requirements: [
-                        'Bachelor\'s degree in HR, Business Administration, or related field',
-                        '5+ years of progressive HR experience with 2+ years in administration',
-                        'Strong leadership and decision-making skills',
-                        'Excellent verbal and written communication skills',
-                        'Technical proficiency in HR systems and software',
-                        'Knowledge of Kenyan labor laws and regulations',
-                        'Project management experience',
-                        'Professional HR certification preferred'
-                    ],
-                    qualifications: [
-                        'Master\'s degree in HR or MBA (preferred)',
-                        'Professional certification (CHRP, SHRM, etc.)',
-                        'Experience in automotive industry (advantageous)'
-                    ],
-                    salaryRange: 'KES 150,000 - 300,000 per month',
-                    benefits: [
-                        'Health insurance',
-                        'Retirement benefits',
-                        'Annual bonus',
-                        'Professional development allowance',
-                        'Company car allowance'
-                    ]
-                },
-                'Manager': {
-                    title: 'Manager',
-                    department: 'Operations',
-                    summary: 'Manages department operations and ensures team performance targets are met.',
-                    responsibilities: [
-                        'Supervise and mentor team members',
-                        'Approve requisitions, leave requests, and other departmental approvals',
-                        'Monitor and report on team performance metrics',
-                        'Conduct regular performance reviews and feedback sessions',
-                        'Develop and implement team training programs',
-                        'Coordinate with other departments for seamless operations',
-                        'Manage departmental budget and resources',
-                        'Implement process improvements'
-                    ],
-                    requirements: [
-                        'Bachelor\'s degree in Business, Management, or related field',
-                        '3+ years of management experience',
-                        'Strong organizational and planning skills',
-                        'Excellent decision-making and problem-solving abilities',
-                        'Proven team leadership experience',
-                        'Good understanding of operational processes',
-                        'Excellent communication and interpersonal skills'
-                    ],
-                    qualifications: [
-                        'Master\'s degree in Management or MBA',
-                        'Certification in project management',
-                        'Experience in automotive or manufacturing industry'
-                    ],
-                    salaryRange: 'KES 120,000 - 250,000 per month',
-                    benefits: [
-                        'Health insurance',
-                        'Performance bonus',
-                        'Training opportunities',
-                        'Transport allowance',
-                        'Annual leave days'
-                    ]
-                }
-                // Add more job descriptions as needed
-            };
+        async function loadJobDescriptionsTable() {
+            try {
+                const snapshot = await db.collection('jobDescriptions').orderBy('positionTitle').get();
+                
+                const tableBody = jobDescriptionsTable.querySelector('tbody');
+                tableBody.innerHTML = '';
+                
+                snapshot.forEach(doc => {
+                    const job = doc.data();
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${job.positionTitle}</td>
+                        <td>${job.department}</td>
+                        <td>${job.reportsTo || 'N/A'}</td>
+                        <td>${formatDate(job.updatedAt?.toDate())}</td>
+                        <td><span class="status status-${job.status || 'active'}">${job.status || 'active'}</span></td>
+                        <td>
+                            <button class="action-btn btn-view" onclick="viewJobDescription('${doc.id}')">View</button>
+                            <button class="action-btn btn-edit" onclick="editJobDescription('${doc.id}')">Edit</button>
+                            <button class="action-btn btn-delete" onclick="deleteJobDescription('${doc.id}')">Delete</button>
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Error loading job descriptions table:', error);
+            }
+        }
+
+        async function loadMyJobDescription() {
+            if (!currentUserData) return;
             
-            const job = jobDescriptions[title];
-            if (!job) return;
+            try {
+                // Try to find job description by position or department
+                let job = jobDescriptions.find(j => 
+                    j.positionTitle === currentUserData.position || 
+                    j.department === currentUserData.department
+                );
+                
+                // If not found, get the first matching job description
+                if (!job) {
+                    const snapshot = await db.collection('jobDescriptions')
+                        .where('positionTitle', '==', currentUserData.position)
+                        .limit(1)
+                        .get();
+                    
+                    if (!snapshot.empty) {
+                        const doc = snapshot.docs[0];
+                        job = { id: doc.id, ...doc.data() };
+                    }
+                }
+                
+                if (job) {
+                    displayJobDescription(job, myJobDescriptionContent, false);
+                } else {
+                    myJobDescriptionContent.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fas fa-file-alt"></i>
+                            <h3>No Job Description Found</h3>
+                            <p>No job description has been assigned to your position yet.</p>
+                            <p>Please contact HR department for more information.</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error loading my job description:', error);
+                myJobDescriptionContent.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <h3>Error Loading Job Description</h3>
+                        <p>There was an error loading your job description.</p>
+                        <p>Please try again later or contact HR department.</p>
+                    </div>
+                `;
+            }
+        }
+
+        function displayJobDescription(job, container, isEditable = false) {
+            const responsibilities = job.responsibilities ? 
+                (Array.isArray(job.responsibilities) ? job.responsibilities : job.responsibilities.split('\n')) : [];
+            const requirements = job.requirements ? 
+                (Array.isArray(job.requirements) ? job.requirements : job.requirements.split('\n')) : [];
+            const skills = job.skills ? 
+                (Array.isArray(job.skills) ? job.skills : job.skills.split('\n')) : [];
+            const benefits = job.benefits ? 
+                (Array.isArray(job.benefits) ? job.benefits : job.benefits.split('\n')) : [];
+            
+            let html = `
+                <div style="margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: start;">
+                        <div>
+                            <h2>${job.positionTitle}</h2>
+                            <p><strong>Department:</strong> ${job.department}</p>
+                        </div>
+                        <span class="status status-${job.status || 'active'}">${job.status || 'active'}</span>
+                    </div>
+                    <p><strong>Reports To:</strong> ${job.reportsTo || 'N/A'}</p>
+                    <p><strong>Employment Type:</strong> ${job.employmentType || 'Full-time'}</p>
+                    <p><strong>Location:</strong> ${job.location || 'Nairobi, Kenya'}</p>
+                </div>
+                
+                <div class="job-section">
+                    <h3>Job Summary</h3>
+                    <p>${job.jobSummary || 'No summary provided.'}</p>
+                </div>
+                
+                <div class="job-details-grid">
+                    <div class="job-section">
+                        <h3>Key Responsibilities</h3>
+                        ${responsibilities.length > 0 ? `
+                            <ul>
+                                ${responsibilities.map(resp => `<li>${resp}</li>`).join('')}
+                            </ul>
+                        ` : '<p>No responsibilities listed.</p>'}
+                    </div>
+                    
+                    <div class="job-section">
+                        <h3>Requirements & Qualifications</h3>
+                        ${requirements.length > 0 ? `
+                            <ul>
+                                ${requirements.map(req => `<li>${req}</li>`).join('')}
+                            </ul>
+                        ` : '<p>No requirements listed.</p>'}
+                    </div>
+                </div>
+            `;
+            
+            if (skills.length > 0) {
+                html += `
+                    <div class="job-section">
+                        <h3>Required Skills</h3>
+                        <ul>
+                            ${skills.map(skill => `<li>${skill}</li>`).join('')}
+                        </ul>
+                    </div>
+                `;
+            }
+            
+            if (benefits.length > 0) {
+                html += `
+                    <div class="job-section">
+                        <h3>Benefits</h3>
+                        <ul>
+                            ${benefits.map(benefit => `<li>${benefit}</li>`).join('')}
+                        </ul>
+                    </div>
+                `;
+            }
+            
+            if (job.notes) {
+                html += `
+                    <div class="job-section">
+                        <h3>Additional Notes</h3>
+                        <p>${job.notes}</p>
+                    </div>
+                `;
+            }
+            
+            html += `
+                <div class="job-section">
+                    <p><strong>Last Updated:</strong> ${formatDate(job.updatedAt?.toDate())}</p>
+                </div>
+            `;
+            
+            if (isEditable && checkPermission('canManageJobDescriptions')) {
+                html += `
+                    <div class="job-description-actions">
+                        <button class="btn btn-edit" onclick="editJobDescription('${job.id}')">Edit</button>
+                        <button class="btn btn-delete" onclick="deleteJobDescription('${job.id}')">Delete</button>
+                    </div>
+                `;
+            }
+            
+            container.innerHTML = html;
+        }
+
+        function viewJobDescription(jobId) {
+            const job = jobDescriptions.find(j => j.id === jobId);
+            if (!job) {
+                showAlert('Job description not found', 'error');
+                return;
+            }
             
             const modal = document.getElementById('jobDescriptionModal');
             const modalTitle = document.getElementById('jobModalTitle');
             const modalBody = document.getElementById('jobModalBody');
             
-            modalTitle.textContent = `${job.title} - Job Description`;
-            modalBody.innerHTML = `
-                <div style="margin-bottom: 20px;">
-                    <p><strong>Position Title:</strong> ${job.title}</p>
-                    <p><strong>Department:</strong> ${job.department}</p>
-                    <p><strong>Reports To:</strong> ${title === 'Administrator' ? 'CEO' : 'Department Head'}</p>
-                    <p><strong>Location:</strong> Nairobi, Kenya</p>
-                    <p><strong>Employment Type:</strong> Full-time</p>
-                </div>
-                
-                <div class="job-section">
-                    <h3>Job Summary</h3>
-                    <p>${job.summary}</p>
-                </div>
-                
-                <div class="job-section">
-                    <h3>Key Responsibilities</h3>
-                    <ul>
-                        ${job.responsibilities.map(resp => `<li>${resp}</li>`).join('')}
-                    </ul>
-                </div>
-                
-                <div class="job-details-grid">
-                    <div class="job-section">
-                        <h3>Requirements</h3>
-                        <ul>
-                            ${job.requirements.map(req => `<li>${req}</li>`).join('')}
-                        </ul>
-                    </div>
+            modalTitle.textContent = `${job.positionTitle} - Job Description`;
+            displayJobDescription(job, modalBody, true);
+            modal.style.display = 'flex';
+        }
+
+        function openEditJobDescriptionModal(jobId = null) {
+            const modal = document.getElementById('editJobDescriptionModal');
+            const modalTitle = document.getElementById('editJobModalTitle');
+            const form = document.getElementById('editJobForm');
+            
+            if (jobId) {
+                // Edit existing job description
+                modalTitle.textContent = 'Edit Job Description';
+                const job = jobDescriptions.find(j => j.id === jobId);
+                if (job) {
+                    document.getElementById('editJobTitle').value = job.positionTitle;
+                    document.getElementById('editJobDepartment').value = job.department;
+                    document.getElementById('editJobReportsTo').value = job.reportsTo || '';
+                    document.getElementById('editJobLocation').value = job.location || '';
+                    document.getElementById('editJobSummary').value = job.jobSummary || '';
+                    document.getElementById('editJobResponsibilities').value = 
+                        Array.isArray(job.responsibilities) ? job.responsibilities.join('\n') : job.responsibilities || '';
+                    document.getElementById('editJobRequirements').value = 
+                        Array.isArray(job.requirements) ? job.requirements.join('\n') : job.requirements || '';
+                    document.getElementById('editJobSkills').value = 
+                        Array.isArray(job.skills) ? job.skills.join('\n') : job.skills || '';
+                    document.getElementById('editJobBenefits').value = 
+                        Array.isArray(job.benefits) ? job.benefits.join('\n') : job.benefits || '';
+                    document.getElementById('editJobEmploymentType').value = job.employmentType || 'Full-time';
+                    document.getElementById('editJobStatus').value = job.status || 'active';
+                    document.getElementById('editJobNotes').value = job.notes || '';
                     
-                    ${job.qualifications ? `
-                    <div class="job-section">
-                        <h3>Preferred Qualifications</h3>
-                        <ul>
-                            ${job.qualifications.map(qual => `<li>${qual}</li>`).join('')}
-                        </ul>
-                    </div>
-                    ` : ''}
-                </div>
-                
-                <div class="job-section">
-                    <h3>Compensation & Benefits</h3>
-                    <p><strong>Salary Range:</strong> ${job.salaryRange}</p>
-                    ${job.benefits ? `
-                    <p><strong>Benefits:</strong></p>
-                    <ul>
-                        ${job.benefits.map(benefit => `<li>${benefit}</li>`).join('')}
-                    </ul>
-                    ` : ''}
-                </div>
-                
-                <div class="job-section">
-                    <h3>Application Process</h3>
-                    <p>To apply for this position, please submit your CV and cover letter through the internal job portal or contact HR department.</p>
-                </div>
-            `;
+                    form.dataset.jobId = jobId;
+                }
+            } else {
+                // Create new job description
+                modalTitle.textContent = 'Create New Job Description';
+                form.reset();
+                document.getElementById('editJobStatus').value = 'draft';
+                delete form.dataset.jobId;
+            }
             
             modal.style.display = 'flex';
+        }
+
+        async function editJobDescription(jobId) {
+            openEditJobDescriptionModal(jobId);
+        }
+
+        async function saveJobDescription(e) {
+            e.preventDefault();
+            showLoading('Saving job description...');
+            
+            const form = document.getElementById('editJobForm');
+            const jobId = form.dataset.jobId;
+            const positionTitle = document.getElementById('editJobTitle').value;
+            const department = document.getElementById('editJobDepartment').value;
+            const reportsTo = document.getElementById('editJobReportsTo').value;
+            const location = document.getElementById('editJobLocation').value;
+            const jobSummary = document.getElementById('editJobSummary').value;
+            const responsibilities = document.getElementById('editJobResponsibilities').value;
+            const requirements = document.getElementById('editJobRequirements').value;
+            const skills = document.getElementById('editJobSkills').value;
+            const benefits = document.getElementById('editJobBenefits').value;
+            const employmentType = document.getElementById('editJobEmploymentType').value;
+            const status = document.getElementById('editJobStatus').value;
+            const notes = document.getElementById('editJobNotes').value;
+            
+            // Validate required fields
+            if (!positionTitle || !department || !jobSummary || !responsibilities || !requirements) {
+                hideLoading();
+                showAlert('Please fill all required fields', 'error');
+                return;
+            }
+            
+            try {
+                const jobData = {
+                    positionTitle,
+                    department,
+                    reportsTo,
+                    location,
+                    jobSummary,
+                    responsibilities: responsibilities.split('\n').filter(r => r.trim() !== ''),
+                    requirements: requirements.split('\n').filter(r => r.trim() !== ''),
+                    skills: skills.split('\n').filter(s => s.trim() !== ''),
+                    benefits: benefits.split('\n').filter(b => b.trim() !== ''),
+                    employmentType,
+                    status,
+                    notes,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    updatedBy: currentUser.uid,
+                    updatedByName: currentUserData.name
+                };
+                
+                if (jobId) {
+                    // Update existing job description
+                    await db.collection('jobDescriptions').doc(jobId).update(jobData);
+                    hideLoading();
+                    showAlert('Job description updated successfully', 'success');
+                } else {
+                    // Create new job description
+                    jobData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                    jobData.createdBy = currentUser.uid;
+                    jobData.createdByName = currentUserData.name;
+                    
+                    await db.collection('jobDescriptions').add(jobData);
+                    hideLoading();
+                    showAlert('Job description created successfully', 'success');
+                }
+                
+                // Close modal and reload data
+                document.getElementById('editJobDescriptionModal').style.display = 'none';
+                await loadJobDescriptionsData();
+                await loadJobDescriptions();
+                
+            } catch (error) {
+                console.error('Error saving job description:', error);
+                hideLoading();
+                showAlert('Error saving job description: ' + error.message, 'error');
+            }
+        }
+
+        async function deleteJobDescription(jobId) {
+            if (!confirm('Are you sure you want to delete this job description? This action cannot be undone.')) {
+                return;
+            }
+            
+            showLoading('Deleting job description...');
+            try {
+                await db.collection('jobDescriptions').doc(jobId).delete();
+                hideLoading();
+                showAlert('Job description deleted successfully', 'success');
+                await loadJobDescriptionsData();
+                await loadJobDescriptions();
+            } catch (error) {
+                console.error('Error deleting job description:', error);
+                hideLoading();
+                showAlert('Error deleting job description: ' + error.message, 'error');
+            }
         }
 
         // NEW FEATURES: Calendar Functions
@@ -4557,6 +4838,8 @@
         window.deleteUser = deleteUser;
         window.viewEmployee = viewEmployee;
         window.viewJobDescription = viewJobDescription;
+        window.editJobDescription = editJobDescription;
+        window.deleteJobDescription = deleteJobDescription;
         window.addEventToCalendar = addEventToCalendar;
         
         // NEW FEATURES: Enhanced Requisition Functions
