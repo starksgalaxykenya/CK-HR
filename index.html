@@ -1,0 +1,4567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cars Kenya - HR Management System</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-storage-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        /* All previous CSS styles remain the same */
+        :root {
+            --lime-green: #32CD32;
+            --lime-green-light: #9ACD32;
+            --lime-green-dark: #228B22;
+            --sidebar-width: 250px;
+            --header-height: 70px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f5f5f5;
+            color: #333;
+        }
+
+        /* Loading Animation */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            flex-direction: column;
+        }
+
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 6px solid #f3f3f3;
+            border-top: 6px solid var(--lime-green);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        .loading-text {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--lime-green);
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Login Page */
+        .login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #f5f5f5 0%, #e8f5e8 100%);
+        }
+
+        .login-box {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 30px;
+            color: var(--lime-green);
+        }
+
+        .logo i {
+            font-size: 36px;
+            margin-right: 10px;
+        }
+
+        .logo h1 {
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .input-group input, .input-group select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .input-group input:focus, .input-group select:focus {
+            border-color: var(--lime-green);
+            outline: none;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background-color: var(--lime-green);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .btn:hover {
+            background-color: var(--lime-green-dark);
+        }
+
+        .btn-secondary {
+            background-color: #6c757d;
+        }
+
+        .btn-secondary:hover {
+            background-color: #5a6268;
+        }
+
+        .btn-danger {
+            background-color: #dc3545;
+        }
+
+        .btn-danger:hover {
+            background-color: #c82333;
+        }
+
+        .btn-warning {
+            background-color: #ffc107;
+            color: #333;
+        }
+
+        .btn-warning:hover {
+            background-color: #e0a800;
+        }
+
+        .error-message {
+            color: #dc3545;
+            margin-top: 10px;
+            font-size: 14px;
+            display: none;
+        }
+
+        /* Main App Container */
+        .app-container {
+            display: none;
+        }
+
+        .header {
+            background: white;
+            height: var(--header-height);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+        }
+
+        .header-left h2 {
+            color: var(--lime-green);
+            font-size: 22px;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .notification-bell {
+            position: relative;
+            cursor: pointer;
+            font-size: 20px;
+            color: #666;
+        }
+
+        .notification-count {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #dc3545;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            background: var(--lime-green);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: var(--header-height);
+            width: var(--sidebar-width);
+            height: calc(100vh - var(--header-height));
+            background: white;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            padding-top: 20px;
+            overflow-y: auto;
+        }
+
+        .menu-item {
+            padding: 15px 25px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: #555;
+            cursor: pointer;
+            transition: all 0.3s;
+            border-left: 4px solid transparent;
+        }
+
+        .menu-item:hover, .menu-item.active {
+            background-color: #f0f9f0;
+            color: var(--lime-green);
+            border-left: 4px solid var(--lime-green);
+        }
+
+        .menu-item i {
+            font-size: 18px;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            margin-top: var(--header-height);
+            padding: 30px;
+            min-height: calc(100vh - var(--header-height));
+        }
+
+        .content-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .content-header h1 {
+            color: #333;
+            font-size: 28px;
+        }
+
+        /* Cards */
+        .dashboard-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            transition: transform 0.3s;
+            border-top: 4px solid var(--lime-green);
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card h3 {
+            color: #555;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+
+        .card .count {
+            font-size: 36px;
+            font-weight: bold;
+            color: var(--lime-green);
+        }
+
+        /* Forms */
+        .form-container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .form-control:focus {
+            border-color: var(--lime-green);
+            outline: none;
+        }
+
+        textarea.form-control {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 20px;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+        }
+
+        /* Tables */
+        .table-container {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background-color: #f8f9fa;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            color: #555;
+            border-bottom: 2px solid #eee;
+        }
+
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        tr:hover {
+            background-color: #f9f9f9;
+        }
+
+        .status {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .status-pending {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+
+        .status-approved {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .status-rejected {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .badge {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .badge-admin {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .badge-manager {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .badge-hr {
+            background-color: #6f42c1;
+            color: white;
+        }
+
+        .badge-employee {
+            background-color: var(--lime-green);
+            color: white;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-lg {
+            max-width: 800px;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 24px;
+            color: #333;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #666;
+        }
+
+        /* Notifications */
+        .notification-container {
+            position: absolute;
+            top: 50px;
+            right: 0;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+            width: 350px;
+            max-height: 400px;
+            overflow-y: auto;
+            display: none;
+            z-index: 1001;
+        }
+
+        .notification-item {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .notification-item:hover {
+            background-color: #f9f9f9;
+        }
+
+        .notification-item.unread {
+            background-color: #f0f9f0;
+        }
+
+        /* Action buttons */
+        .action-btn {
+            padding: 8px 15px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            margin: 2px;
+        }
+
+        .btn-approve {
+            background-color: var(--lime-green);
+            color: white;
+        }
+
+        .btn-reject {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .btn-view {
+            background-color: #17a2b8;
+            color: white;
+        }
+
+        .btn-download {
+            background-color: #6c757d;
+            color: white;
+        }
+
+        .btn-edit {
+            background-color: #ffc107;
+            color: #333;
+        }
+
+        .btn-delete {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #eee;
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            cursor: pointer;
+            font-weight: 600;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .tab.active {
+            color: var(--lime-green);
+            border-bottom: 3px solid var(--lime-green);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Alert */
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        /* Enhanced Requisition Form Styles */
+        .requisition-items-table {
+            width: 100%;
+            margin-bottom: 20px;
+            border-collapse: collapse;
+        }
+
+        .requisition-items-table th {
+            background-color: #f8f9fa;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .requisition-items-table td {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .requisition-items-table input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .requisition-total {
+            text-align: right;
+            font-size: 18px;
+            font-weight: bold;
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .currency-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .currency-btn {
+            padding: 8px 15px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            background: white;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .currency-btn.active {
+            border-color: var(--lime-green);
+            background-color: var(--lime-green);
+            color: white;
+        }
+
+        /* Organizational Chart Styles */
+        .org-chart-container {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            overflow-x: auto;
+            min-height: 500px;
+        }
+
+        .org-chart {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+
+        .org-level {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 60px;
+            position: relative;
+        }
+
+        .org-node {
+            background: white;
+            border: 2px solid var(--lime-green);
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            min-width: 200px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+            margin: 0 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .org-node:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .org-node.ceo {
+            background: linear-gradient(135deg, var(--lime-green), var(--lime-green-dark));
+            color: white;
+        }
+
+        .org-node.manager {
+            background: linear-gradient(135deg, #6c757d, #495057);
+            color: white;
+        }
+
+        .org-node.supervisor {
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+        }
+
+        .org-node.employee {
+            background: linear-gradient(135deg, #17a2b8, #138496);
+            color: white;
+        }
+
+        .org-connector {
+            position: absolute;
+            width: 2px;
+            background-color: #ccc;
+            height: 40px;
+            bottom: -40px;
+        }
+
+        .org-children {
+            display: flex;
+            justify-content: center;
+            position: relative;
+        }
+
+        .org-child-connector {
+            width: 100%;
+            height: 2px;
+            background-color: #ccc;
+            position: absolute;
+            top: -20px;
+        }
+
+        /* Job Description Styles */
+        .job-description-container {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+
+        .job-details-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .job-section {
+            margin-bottom: 25px;
+        }
+
+        .job-section h3 {
+            color: var(--lime-green);
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .job-section ul {
+            list-style-type: none;
+            padding-left: 20px;
+        }
+
+        .job-section li {
+            margin-bottom: 8px;
+            position: relative;
+            padding-left: 20px;
+        }
+
+        .job-section li:before {
+            content: "•";
+            color: var(--lime-green);
+            font-size: 20px;
+            position: absolute;
+            left: 0;
+            top: -2px;
+        }
+
+        /* Calendar Styles */
+        .calendar-container {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .calendar-nav {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+        }
+
+        .calendar-day-header {
+            padding: 10px;
+            text-align: center;
+            font-weight: bold;
+            background-color: #f8f9fa;
+            border-radius: 6px;
+        }
+
+        .calendar-day {
+            padding: 15px;
+            min-height: 100px;
+            border: 1px solid #eee;
+            border-radius: 6px;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .calendar-day:hover {
+            background-color: #f9f9f9;
+        }
+
+        .calendar-day.today {
+            background-color: #e8f5e8;
+            border-color: var(--lime-green);
+        }
+
+        .calendar-day.other-month {
+            background-color: #f8f9fa;
+            color: #999;
+        }
+
+        .calendar-day.has-event {
+            background-color: #f0f9f0;
+        }
+
+        .day-number {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .calendar-event {
+            font-size: 12px;
+            padding: 2px 5px;
+            margin: 2px 0;
+            border-radius: 3px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .holiday-ke {
+            background-color: #ffeaa7;
+            color: #d35400;
+        }
+
+        .holiday-jp {
+            background-color: #fab1a0;
+            color: #c0392b;
+        }
+
+        .calendar-legend {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 14px;
+        }
+
+        .legend-color {
+            width: 15px;
+            height: 15px;
+            border-radius: 3px;
+        }
+
+        /* Responsive */
+        @media (max-width: 992px) {
+            .sidebar {
+                width: 70px;
+            }
+            .sidebar .menu-text {
+                display: none;
+            }
+            .main-content {
+                margin-left: 70px;
+            }
+            .org-level {
+                flex-direction: column;
+                align-items: center;
+            }
+            .org-node {
+                margin: 10px 0;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                padding: 0 15px;
+            }
+            .main-content {
+                padding: 15px;
+            }
+            .form-row {
+                flex-direction: column;
+                gap: 0;
+            }
+            .calendar-grid {
+                gap: 2px;
+            }
+            .calendar-day {
+                padding: 8px;
+                min-height: 80px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-text" id="loadingText">Processing...</div>
+    </div>
+
+    <!-- Login Page -->
+    <div class="login-container" id="loginPage">
+        <div class="login-box">
+            <div class="logo">
+                <i class="fas fa-car"></i>
+                <h1>Cars Kenya HR</h1>
+            </div>
+            <div id="loginForm">
+                <div class="input-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" placeholder="Enter your email">
+                </div>
+                <div class="input-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" placeholder="Enter your password">
+                </div>
+                <div class="error-message" id="loginError"></div>
+                <button class="btn" id="loginBtn">Login</button>
+                <p style="margin-top: 20px; color: #666;">Don't have an account? <a href="#" id="showRegisterLink">Register</a></p>
+                <p style="margin-top: 10px; color: #666; font-size: 14px;">Demo: admin@carskenya.com / password123</p>
+            </div>
+            <div id="registerForm" style="display: none;">
+                <div class="input-group">
+                    <label for="regName">Full Name</label>
+                    <input type="text" id="regName" placeholder="Enter your full name">
+                </div>
+                <div class="input-group">
+                    <label for="regEmail">Email</label>
+                    <input type="email" id="regEmail" placeholder="Enter your email">
+                </div>
+                <div class="input-group">
+                    <label for="regPassword">Password</label>
+                    <input type="password" id="regPassword" placeholder="Create a password (min 6 chars)">
+                </div>
+                <div class="input-group">
+                    <label for="regConfirmPassword">Confirm Password</label>
+                    <input type="password" id="regConfirmPassword" placeholder="Confirm your password">
+                </div>
+                <div class="input-group">
+                    <label for="regDepartment">Department</label>
+                    <input type="text" id="regDepartment" placeholder="Enter your department">
+                </div>
+                <div class="input-group">
+                    <label for="regPosition">Position</label>
+                    <input type="text" id="regPosition" placeholder="Enter your position">
+                </div>
+                <div class="error-message" id="registerError"></div>
+                <button class="btn" id="registerBtn">Register</button>
+                <p style="margin-top: 20px; color: #666;">Already have an account? <a href="#" id="showLoginLink">Login</a></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div class="app-container" id="appContainer">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <h2><i class="fas fa-car"></i> Cars Kenya HR System</h2>
+            </div>
+            <div class="header-right">
+                <div class="notification-bell" id="notificationBell">
+                    <i class="fas fa-bell"></i>
+                    <span class="notification-count" id="notificationCount">0</span>
+                    <div class="notification-container" id="notificationContainer">
+                        <!-- Notifications will be populated here -->
+                    </div>
+                </div>
+                <div class="user-profile">
+                    <div class="user-avatar" id="userAvatar">CK</div>
+                    <div>
+                        <div id="userName">Admin User</div>
+                        <small id="userRole">Administrator</small>
+                    </div>
+                    <button class="btn btn-secondary" id="logoutBtn" style="padding: 8px 15px; font-size: 14px;">Logout</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Sidebar -->
+        <nav class="sidebar">
+            <div class="menu-item active" data-page="dashboard">
+                <i class="fas fa-tachometer-alt"></i>
+                <span class="menu-text">Dashboard</span>
+            </div>
+            <div class="menu-item" data-page="requisition">
+                <i class="fas fa-shopping-cart"></i>
+                <span class="menu-text">Create Requisition</span>
+            </div>
+            <div class="menu-item" data-page="leave">
+                <i class="fas fa-calendar-alt"></i>
+                <span class="menu-text">Leave Application</span>
+            </div>
+            <div class="menu-item" data-page="offday">
+                <i class="fas fa-umbrella-beach"></i>
+                <span class="menu-text">Off Day Request</span>
+            </div>
+            <div class="menu-item" data-page="myRequests">
+                <i class="fas fa-history"></i>
+                <span class="menu-text">My Requests</span>
+            </div>
+            <div class="menu-item" data-page="orgChart">
+                <i class="fas fa-sitemap"></i>
+                <span class="menu-text">Org Chart</span>
+            </div>
+            <div class="menu-item" data-page="jobDescriptions">
+                <i class="fas fa-file-alt"></i>
+                <span class="menu-text">Job Descriptions</span>
+            </div>
+            <div class="menu-item" data-page="calendar">
+                <i class="fas fa-calendar"></i>
+                <span class="menu-text">Calendar</span>
+            </div>
+            <div class="menu-item" data-page="approvals" id="approvalsMenuItem" style="display: none;">
+                <i class="fas fa-check-circle"></i>
+                <span class="menu-text">Approvals</span>
+            </div>
+            <div class="menu-item" data-page="userManagement" id="userManagementMenuItem" style="display: none;">
+                <i class="fas fa-users-cog"></i>
+                <span class="menu-text">User Management</span>
+            </div>
+            <div class="menu-item" data-page="reports" id="reportsMenuItem" style="display: none;">
+                <i class="fas fa-chart-bar"></i>
+                <span class="menu-text">Reports</span>
+            </div>
+            <div class="menu-item" data-page="employees" id="employeesMenuItem" style="display: none;">
+                <i class="fas fa-users"></i>
+                <span class="menu-text">Employees</span>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Alert Messages -->
+            <div class="alert" id="alertMessage"></div>
+
+            <!-- Dashboard Content -->
+            <div id="dashboardContent" class="page-content">
+                <div class="content-header">
+                    <h1>Dashboard</h1>
+                    <div class="date-display" id="currentDate"></div>
+                </div>
+                
+                <div class="dashboard-cards">
+                    <div class="card">
+                        <h3>Pending Requisitions</h3>
+                        <div class="count" id="pendingRequisitions">0</div>
+                    </div>
+                    <div class="card">
+                        <h3>Pending Leaves</h3>
+                        <div class="count" id="pendingLeaves">0</div>
+                    </div>
+                    <div class="card">
+                        <h3>Pending Off Days</h3>
+                        <div class="count" id="pendingOffDays">0</div>
+                    </div>
+                    <div class="card">
+                        <h3>Total Employees</h3>
+                        <div class="count" id="totalEmployees">0</div>
+                    </div>
+                </div>
+
+                <div class="content-header">
+                    <h2>Recent Requests</h2>
+                </div>
+                <div class="table-container">
+                    <table id="recentRequestsTable">
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>Requestor</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Data will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Create Requisition Content -->
+            <div id="requisitionContent" class="page-content" style="display: none;">
+                <div class="content-header">
+                    <h1>Create New Requisition</h1>
+                </div>
+                
+                <div class="form-container">
+                    <form id="requisitionForm">
+                        <div class="form-group">
+                            <label for="requisitionTitle">Requisition Title *</label>
+                            <input type="text" id="requisitionTitle" class="form-control" required placeholder="Enter requisition title">
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="requisitionType">Type *</label>
+                                <select id="requisitionType" class="form-control" required>
+                                    <option value="">Select type</option>
+                                    <option value="Stationery">Stationery</option>
+                                    <option value="Equipment">Equipment</option>
+                                    <option value="Furniture">Furniture</option>
+                                    <option value="Software">Software</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <!-- Currency Selector -->
+                        <div class="form-group">
+                            <label>Currency *</label>
+                            <div class="currency-selector">
+                                <button type="button" class="currency-btn active" data-currency="KES">KES (Kenyan Shilling)</button>
+                                <button type="button" class="currency-btn" data-currency="USD">USD (US Dollar)</button>
+                            </div>
+                            <input type="hidden" id="selectedCurrency" value="KES">
+                        </div>
+                        
+                        <!-- Items Table -->
+                        <div class="form-group">
+                            <label>Items *</label>
+                            <table class="requisition-items-table">
+                                <thead>
+                                    <tr>
+                                        <th>Item Description</th>
+                                        <th>Quantity</th>
+                                        <th>Unit Price</th>
+                                        <th>Total</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="itemsTableBody">
+                                    <!-- Items will be added here -->
+                                </tbody>
+                            </table>
+                            <button type="button" class="btn btn-secondary" id="addItemBtn" style="margin-top: 10px;">
+                                <i class="fas fa-plus"></i> Add Item
+                            </button>
+                        </div>
+                        
+                        <!-- Total Amount -->
+                        <div class="requisition-total">
+                            <span id="currencySymbol">KES</span> <span id="totalAmount">0.00</span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="requisitionDescription">Description *</label>
+                            <textarea id="requisitionDescription" class="form-control" required placeholder="Describe what you need and why"></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="requisitionPriority">Priority *</label>
+                                <select id="requisitionPriority" class="form-control" required>
+                                <option value="Low">Low</option>
+                                <option value="Medium" selected>Medium</option>
+                                <option value="High">High</option>
+                                <option value="Urgent">Urgent</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="approver">Send to Approver *</label>
+                                <select id="approver" class="form-control" required>
+                                    <!-- Users will be populated from Firebase -->
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="ccUsers">CC to (Optional)</label>
+                                <select id="ccUsers" class="form-control" multiple>
+                                    <!-- Users will be populated from Firebase -->
+                                </select>
+                                <small>Hold Ctrl/Cmd to select multiple users</small>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="expectedDate">Expected Delivery Date</label>
+                            <input type="date" id="expectedDate" class="form-control">
+                        </div>
+                        
+                        <button type="submit" class="btn">Submit Requisition</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Leave Application Content -->
+            <div id="leaveContent" class="page-content" style="display: none;">
+                <div class="content-header">
+                    <h1>Apply for Leave</h1>
+                </div>
+                
+                <div class="form-container">
+                    <form id="leaveForm">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="leaveType">Leave Type *</label>
+                                <select id="leaveType" class="form-control" required>
+                                    <option value="">Select type</option>
+                                    <option value="Annual">Annual Leave</option>
+                                    <option value="Sick">Sick Leave</option>
+                                    <option value="Maternity">Maternity Leave</option>
+                                    <option value="Paternity">Paternity Leave</option>
+                                    <option value="Study">Study Leave</option>
+                                    <option value="Unpaid">Unpaid Leave</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="leaveDays">Number of Days *</label>
+                                <input type="number" id="leaveDays" class="form-control" required min="1" max="30" placeholder="Number of days">
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="leaveStart">Start Date *</label>
+                                <input type="date" id="leaveStart" class="form-control" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="leaveEnd">End Date *</label>
+                                <input type="date" id="leaveEnd" class="form-control" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="leaveReason">Reason for Leave *</label>
+                            <textarea id="leaveReason" class="form-control" required placeholder="Provide reason for leave"></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="leaveApprover">Send to Approver *</label>
+                                <select id="leaveApprover" class="form-control" required>
+                                <!-- Users will be populated from Firebase -->
+                            </select>
+                        </div>
+                        
+                        <button type="submit" class="btn">Submit Leave Application</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Off Day Request Content -->
+            <div id="offdayContent" class="page-content" style="display: none;">
+                <div class="content-header">
+                    <h1>Request Off Day</h1>
+                </div>
+                
+                <div class="form-container">
+                    <form id="offdayForm">
+                        <div class="form-group">
+                            <label for="offdayDate">Off Day Date *</label>
+                            <input type="date" id="offdayDate" class="form-control" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="offdayReason">Reason *</label>
+                            <select id="offdayReason" class="form-control" required>
+                                <option value="">Select reason</option>
+                                <option value="Personal">Personal Reasons</option>
+                                <option value="Family">Family Matter</option>
+                                <option value="Medical">Medical Appointment</option>
+                                <option value="Emergency">Emergency</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="offdayDescription">Additional Details</label>
+                            <textarea id="offdayDescription" class="form-control" placeholder="Provide additional details if needed"></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="offdayApprover">Send to Approver *</label>
+                            <select id="offdayApprover" class="form-control" required>
+                                <!-- Users will be populated from Firebase -->
+                            </select>
+                        </div>
+                        
+                        <button type="submit" class="btn">Submit Off Day Request</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- My Requests Content -->
+            <div id="myRequestsContent" class="page-content" style="display: none;">
+                <div class="content-header">
+                    <h1>My Requests</h1>
+                    <div class="filter-options">
+                        <select id="requestFilter" class="form-control" style="width: 200px;">
+                            <option value="all">All Requests</option>
+                            <option value="requisition">Requisitions</option>
+                            <option value="leave">Leaves</option>
+                            <option value="offday">Off Days</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="table-container">
+                    <table id="myRequestsTable">
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>Title/Details</th>
+                                <th>Date Submitted</th>
+                                <th>Status</th>
+                                <th>Approver</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Data will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Organizational Chart Content -->
+            <div id="orgChartContent" class="page-content" style="display: none;">
+                <div class="content-header">
+                    <h1>Organizational Chart</h1>
+                    <div>
+                        <select id="departmentFilter" class="form-control" style="width: 200px;">
+                            <option value="all">All Departments</option>
+                            <option value="Management">Management</option>
+                            <option value="Operations">Operations</option>
+                            <option value="Sales">Sales</option>
+                            <option value="Human Resources">Human Resources</option>
+                            <option value="Finance">Finance</option>
+                            <option value="IT">IT</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="org-chart-container">
+                    <div id="orgChart" class="org-chart">
+                        <!-- Organizational chart will be generated here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Job Descriptions Content -->
+            <div id="jobDescriptionsContent" class="page-content" style="display: none;">
+                <div class="content-header">
+                    <h1>Job Descriptions</h1>
+                    <div>
+                        <select id="jobFilter" class="form-control" style="width: 200px;">
+                            <option value="all">All Positions</option>
+                            <option value="Administrator">Administrator</option>
+                            <option value="Manager">Manager</option>
+                            <option value="Supervisor">Supervisor</option>
+                            <option value="Employee">Employee</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div id="jobDescriptionsContainer">
+                    <!-- Job descriptions will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Calendar Content -->
+            <div id="calendarContent" class="page-content" style="display: none;">
+                <div class="content-header">
+                    <h1>Calendar</h1>
+                    <div class="calendar-nav">
+                        <button class="btn btn-secondary" id="prevMonth">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <h2 id="currentMonthYear">February 2026</h2>
+                        <button class="btn btn-secondary" id="nextMonth">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                        <button class="btn" id="todayBtn">Today</button>
+                    </div>
+                </div>
+                
+                <div class="calendar-container">
+                    <div class="calendar-grid" id="calendarGrid">
+                        <!-- Calendar will be generated here -->
+                    </div>
+                    
+                    <div class="calendar-legend">
+                        <div class="legend-item">
+                            <div class="legend-color" style="background-color: #ffeaa7;"></div>
+                            <span>Kenyan Holiday</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background-color: #fab1a0;"></div>
+                            <span>Japanese Holiday</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background-color: #e8f5e8;"></div>
+                            <span>Today</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background-color: #f0f9f0;"></div>
+                            <span>Has Event</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Approvals Content -->
+            <div id="approvalsContent" class="page-content" style="display: none;">
+                <div class="content-header">
+                    <h1>Pending Approvals</h1>
+                    <div class="tabs">
+                        <div class="tab active" data-tab="pending">Pending</div>
+                        <div class="tab" data-tab="approved">Approved</div>
+                        <div class="tab" data-tab="rejected">Rejected</div>
+                    </div>
+                </div>
+                
+                <div class="tab-content active" id="pendingTab">
+                    <div class="table-container">
+                        <table id="approvalsTable">
+                            <thead>
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Requestor</th>
+                                    <th>Details</th>
+                                    <th>Date</th>
+                                    <th>Priority</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Data will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="tab-content" id="approvedTab">
+                    <div class="table-container">
+                        <table id="approvedTable">
+                            <thead>
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Requestor</th>
+                                    <th>Details</th>
+                                    <th>Date</th>
+                                    <th>Approved Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Data will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="tab-content" id="rejectedTab">
+                    <div class="table-container">
+                        <table id="rejectedTable">
+                            <thead>
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Requestor</th>
+                                    <th>Details</th>
+                                    <th>Date</th>
+                                    <th>Rejection Reason</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Data will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- User Management Content -->
+            <div id="userManagementContent" class="page-content" style="display: none;">
+                <div class="content-header">
+                    <h1>User Management</h1>
+                    <button class="btn" id="addUserBtn">Add New User</button>
+                </div>
+                
+                <div class="table-container">
+                    <table id="usersTable">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Department</th>
+                                <th>Position</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Data will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Employees Content -->
+            <div id="employeesContent" class="page-content" style="display: none;">
+                <div class="content-header">
+                    <h1>Employee Directory</h1>
+                </div>
+                
+                <div class="dashboard-cards">
+                    <div class="card">
+                        <h3>Active Employees</h3>
+                        <div class="count" id="activeEmployees">0</div>
+                    </div>
+                    <div class="card">
+                        <h3>On Leave</h3>
+                        <div class="count" id="onLeaveEmployees">0</div>
+                    </div>
+                    <div class="card">
+                        <h3>Departments</h3>
+                        <div class="count" id="totalDepartments">0</div>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table id="employeesTable">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Department</th>
+                                <th>Position</th>
+                                <th>Role</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Data will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Reports Content -->
+            <div id="reportsContent" class="page-content" style="display: none;">
+                <div class="content-header">
+                    <h1>Reports & Analytics</h1>
+                    <div>
+                        <select id="reportPeriod" class="form-control" style="width: 200px;">
+                            <option value="month">This Month</option>
+                            <option value="quarter">This Quarter</option>
+                            <option value="year">This Year</option>
+                            <option value="all">All Time</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="dashboard-cards">
+                    <div class="card">
+                        <h3>Total Requisitions</h3>
+                        <div class="count" id="totalRequisitions">0</div>
+                    </div>
+                    <div class="card">
+                        <h3>Total Leave Days</h3>
+                        <div class="count" id="totalLeaveDays">0</div>
+                    </div>
+                    <div class="card">
+                        <h3>Approval Rate</h3>
+                        <div class="count" id="approvalRate">0%</div>
+                    </div>
+                    <div class="card">
+                        <h3>Avg. Approval Time</h3>
+                        <div class="count" id="avgApprovalTime">0h</div>
+                    </div>
+                </div>
+
+                <div class="content-header">
+                    <h2>Department-wise Requests</h2>
+                </div>
+                <div class="table-container">
+                    <table id="departmentReportsTable">
+                        <thead>
+                            <tr>
+                                <th>Department</th>
+                                <th>Requisitions</th>
+                                <th>Leaves</th>
+                                <th>Off Days</th>
+                                <th>Approval Rate</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Data will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- Modals -->
+        <div class="modal" id="requestModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title" id="modalTitle">Request Details</h2>
+                    <button class="close-modal" id="closeModal">&times;</button>
+                </div>
+                <div id="modalBody">
+                    <!-- Modal content will be populated here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- User Modal -->
+        <div class="modal" id="userModal">
+            <div class="modal-content modal-lg">
+                <div class="modal-header">
+                    <h2 class="modal-title" id="userModalTitle">Add New User</h2>
+                    <button class="close-modal" id="closeUserModal">&times;</button>
+                </div>
+                <div id="userModalBody">
+                    <form id="userForm">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="userNameInput">Full Name *</label>
+                                <input type="text" id="userNameInput" class="form-control" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="userEmail">Email *</label>
+                                <input type="email" id="userEmail" class="form-control" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="userPassword">Password *</label>
+                                <input type="password" id="userPassword" class="form-control" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="userConfirmPassword">Confirm Password *</label>
+                                <input type="password" id="userConfirmPassword" class="form-control" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="userRoleSelect">Role *</label>
+                                <select id="userRoleSelect" class="form-control" required>
+                                    <option value="employee">Employee</option>
+                                    <option value="manager">Manager</option>
+                                    <option value="hr">HR Manager</option>
+                                    <option value="admin">Administrator</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="userDepartment">Department *</label>
+                                <input type="text" id="userDepartment" class="form-control" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="userPosition">Position *</label>
+                                <input type="text" id="userPosition" class="form-control" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="userPhone">Phone Number</label>
+                                <input type="tel" id="userPhone" class="form-control">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="userAddress">Address</label>
+                            <textarea id="userAddress" class="form-control"></textarea>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="userJoinDate">Join Date</label>
+                                <input type="date" id="userJoinDate" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label for="userStatus">Status</label>
+                                <select id="userStatus" class="form-control">
+                                    <option value="active">Active</option>
+                                    <option value="inactive">Inactive</option>
+                                    <option value="on-leave">On Leave</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="btn" id="saveUserBtn">Save User</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notification Modal -->
+        <div class="modal" id="notificationModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title">Notification Details</h2>
+                    <button class="close-modal" id="closeNotificationModal">&times;</button>
+                </div>
+                <div id="notificationModalBody">
+                    <!-- Notification details will be populated here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Job Description Modal -->
+        <div class="modal" id="jobDescriptionModal">
+            <div class="modal-content modal-lg">
+                <div class="modal-header">
+                    <h2 class="modal-title" id="jobModalTitle">Job Description</h2>
+                    <button class="close-modal" id="closeJobModal">&times;</button>
+                </div>
+                <div id="jobModalBody">
+                    <!-- Job description content will be populated here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Calendar Event Modal -->
+        <div class="modal" id="calendarEventModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title">Event Details</h2>
+                    <button class="close-modal" id="closeEventModal">&times;</button>
+                </div>
+                <div id="eventModalBody">
+                    <!-- Event details will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCuUKCxYx0jYKqWOQaN82K5zFGlQsKQsK0",
+            authDomain: "ck-manager-1abdc.firebaseapp.com",
+            projectId: "ck-manager-1abdc",
+            storageBucket: "ck-manager-1abdc.firebasestorage.app",
+            messagingSenderId: "890017473158",
+            appId: "1:890017473158:web:528e1eebc4b67bd54ca707",
+            measurementId: "G-7Z71W1NSX4"
+        };
+
+        // Initialize Firebase
+        try {
+            firebase.initializeApp(firebaseConfig);
+        } catch (error) {
+            console.error('Firebase initialization error:', error);
+        }
+        
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        const storage = firebase.storage();
+
+        // App State
+        let currentUser = null;
+        let currentUserData = null;
+        let users = [];
+        let notifications = [];
+        let allRequests = [];
+        
+        // Calendar State
+        let currentMonth = new Date().getMonth();
+        let currentYear = new Date().getFullYear();
+        
+        // Requisition Items
+        let requisitionItems = [];
+        let selectedCurrency = 'KES';
+        const exchangeRates = {
+            KES: 1,
+            USD: 0.0078 // Approximate exchange rate
+        };
+
+        // Role Definitions
+        const ROLES = {
+            ADMIN: 'admin',
+            HR: 'hr',
+            MANAGER: 'manager',
+            EMPLOYEE: 'employee'
+        };
+
+        // Role Permissions
+        const PERMISSIONS = {
+            [ROLES.ADMIN]: {
+                canManageUsers: true,
+                canApproveRequests: true,
+                canViewReports: true,
+                canManageEmployees: true,
+                canCreateRequests: true
+            },
+            [ROLES.HR]: {
+                canManageUsers: true,
+                canApproveRequests: true,
+                canViewReports: true,
+                canManageEmployees: true,
+                canCreateRequests: true
+            },
+            [ROLES.MANAGER]: {
+                canManageUsers: false,
+                canApproveRequests: true,
+                canViewReports: true,
+                canManageEmployees: false,
+                canCreateRequests: true
+            },
+            [ROLES.EMPLOYEE]: {
+                canManageUsers: false,
+                canApproveRequests: false,
+                canViewReports: false,
+                canManageEmployees: false,
+                canCreateRequests: true
+            }
+        };
+
+        // DOM Elements
+        const loginPage = document.getElementById('loginPage');
+        const appContainer = document.getElementById('appContainer');
+        const loginBtn = document.getElementById('loginBtn');
+        const registerBtn = document.getElementById('registerBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const loginError = document.getElementById('loginError');
+        const registerError = document.getElementById('registerError');
+        const loginForm = document.getElementById('loginForm');
+        const registerForm = document.getElementById('registerForm');
+        const showRegisterLink = document.getElementById('showRegisterLink');
+        const showLoginLink = document.getElementById('showLoginLink');
+        const notificationBell = document.getElementById('notificationBell');
+        const notificationContainer = document.getElementById('notificationContainer');
+        const notificationCount = document.getElementById('notificationCount');
+        const userAvatar = document.getElementById('userAvatar');
+        const userName = document.getElementById('userName');
+        const userRoleElement = document.getElementById('userRole');
+        const alertMessage = document.getElementById('alertMessage');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const loadingText = document.getElementById('loadingText');
+
+        // NEW FEATURES: Enhanced Requisition Form Elements
+        const itemsTableBody = document.getElementById('itemsTableBody');
+        const addItemBtn = document.getElementById('addItemBtn');
+        const totalAmountElement = document.getElementById('totalAmount');
+        const currencySymbolElement = document.getElementById('currencySymbol');
+        const selectedCurrencyInput = document.getElementById('selectedCurrency');
+        const currencyButtons = document.querySelectorAll('.currency-btn');
+
+        // NEW FEATURES: Calendar Elements
+        const prevMonthBtn = document.getElementById('prevMonth');
+        const nextMonthBtn = document.getElementById('nextMonth');
+        const todayBtn = document.getElementById('todayBtn');
+        const currentMonthYearElement = document.getElementById('currentMonthYear');
+        const calendarGrid = document.getElementById('calendarGrid');
+
+        // Holiday Data (Kenyan and Japanese)
+        const holidays = {
+            // Kenyan Holidays 2026
+            'KE': [
+                { date: '2026-01-01', name: 'New Year\'s Day' },
+                { date: '2026-03-03', name: 'Labor Day' },
+                { date: '2026-06-01', name: 'Madaraka Day' },
+                { date: '2026-10-10', name: 'Moi Day' },
+                { date: '2026-10-20', name: 'Mashujaa Day' },
+                { date: '2026-12-12', name: 'Jamhuri Day' },
+                { date: '2026-12-25', name: 'Christmas Day' },
+                { date: '2026-12-26', name: 'Boxing Day' },
+                // Easter 2026 (estimated)
+                { date: '2026-04-03', name: 'Good Friday' },
+                { date: '2026-04-06', name: 'Easter Monday' }
+            ],
+            // Japanese Holidays 2026
+            'JP': [
+                { date: '2026-01-01', name: '元日 (New Year\'s Day)' },
+                { date: '2026-01-12', name: '成人の日 (Coming of Age Day)' },
+                { date: '2026-02-11', name: '建国記念の日 (National Foundation Day)' },
+                { date: '2026-03-20', name: '春分の日 (Vernal Equinox Day)' },
+                { date: '2026-04-29', name: '昭和の日 (Showa Day)' },
+                { date: '2026-05-03', name: '憲法記念日 (Constitution Memorial Day)' },
+                { date: '2026-05-04', name: 'みどりの日 (Greenery Day)' },
+                { date: '2026-05-05', name: 'こどもの日 (Children\'s Day)' },
+                { date: '2026-07-20', name: '海の日 (Marine Day)' },
+                { date: '2026-09-21', name: '敬老の日 (Respect for the Aged Day)' },
+                { date: '2026-09-22', name: '秋分の日 (Autumnal Equinox Day)' },
+                { date: '2026-10-12', name: 'スポーツの日 (Sports Day)' },
+                { date: '2026-11-03', name: '文化の日 (Culture Day)' },
+                { date: '2026-11-23', name: '勤労感謝の日 (Labor Thanksgiving Day)' },
+                { date: '2026-12-23', name: '天皇誕生日 (Emperor\'s Birthday)' }
+            ]
+        };
+
+        // Loading Functions
+        function showLoading(message = 'Processing...') {
+            loadingText.textContent = message;
+            loadingOverlay.style.display = 'flex';
+        }
+
+        function hideLoading() {
+            loadingOverlay.style.display = 'none';
+        }
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', () => {
+            // Set current date
+            document.getElementById('currentDate').textContent = new Date().toLocaleDateString('en-US', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+
+            // Event Listeners
+            loginBtn.addEventListener('click', handleLogin);
+            registerBtn.addEventListener('click', handleRegister);
+            logoutBtn.addEventListener('click', handleLogout);
+            showRegisterLink.addEventListener('click', () => toggleAuthForms('register'));
+            showLoginLink.addEventListener('click', () => toggleAuthForms('login'));
+            notificationBell.addEventListener('click', toggleNotifications);
+            document.getElementById('addUserBtn')?.addEventListener('click', () => openUserModal());
+
+            // Menu navigation
+            document.querySelectorAll('.menu-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const page = item.getAttribute('data-page');
+                    navigateToPage(page);
+                });
+            });
+
+            // Tab navigation
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const tabName = tab.getAttribute('data-tab');
+                    switchTab(tabName);
+                });
+            });
+
+            // Close modals
+            document.getElementById('closeModal').addEventListener('click', () => {
+                document.getElementById('requestModal').style.display = 'none';
+            });
+
+            document.getElementById('closeUserModal').addEventListener('click', () => {
+                document.getElementById('userModal').style.display = 'none';
+            });
+
+            document.getElementById('closeNotificationModal').addEventListener('click', () => {
+                document.getElementById('notificationModal').style.display = 'none';
+            });
+
+            document.getElementById('closeJobModal').addEventListener('click', () => {
+                document.getElementById('jobDescriptionModal').style.display = 'none';
+            });
+
+            document.getElementById('closeEventModal').addEventListener('click', () => {
+                document.getElementById('calendarEventModal').style.display = 'none';
+            });
+
+            // Form submissions
+            document.getElementById('requisitionForm')?.addEventListener('submit', submitRequisition);
+            document.getElementById('leaveForm')?.addEventListener('submit', submitLeave);
+            document.getElementById('offdayForm')?.addEventListener('submit', submitOffDay);
+            document.getElementById('userForm')?.addEventListener('submit', saveUser);
+
+            // Filter changes
+            document.getElementById('requestFilter')?.addEventListener('change', loadMyRequests);
+            document.getElementById('reportPeriod')?.addEventListener('change', loadReports);
+            document.getElementById('departmentFilter')?.addEventListener('change', loadOrgChart);
+            document.getElementById('jobFilter')?.addEventListener('change', loadJobDescriptions);
+
+            // NEW FEATURES: Enhanced Requisition Form Event Listeners
+            if (addItemBtn) {
+                addItemBtn.addEventListener('click', addRequisitionItem);
+                initializeRequisitionItems();
+            }
+
+            // Currency selector
+            currencyButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    currencyButtons.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    selectedCurrency = btn.getAttribute('data-currency');
+                    selectedCurrencyInput.value = selectedCurrency;
+                    currencySymbolElement.textContent = selectedCurrency;
+                    calculateTotal();
+                });
+            });
+
+            // NEW FEATURES: Calendar Event Listeners
+            if (prevMonthBtn) prevMonthBtn.addEventListener('click', previousMonth);
+            if (nextMonthBtn) nextMonthBtn.addEventListener('click', nextMonth);
+            if (todayBtn) todayBtn.addEventListener('click', goToToday);
+
+            // Check auth state
+            auth.onAuthStateChanged(async (user) => {
+                if (user) {
+                    currentUser = user;
+                    await loadCurrentUserData();
+                    showAppInterface();
+                    await loadUsers();
+                    loadNotifications();
+                } else {
+                    showLoginInterface();
+                }
+            });
+
+            // Set today's date for date inputs
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('offdayDate')?.setAttribute('min', today);
+            document.getElementById('leaveStart')?.setAttribute('min', today);
+            document.getElementById('leaveEnd')?.setAttribute('min', today);
+            document.getElementById('expectedDate')?.setAttribute('min', today);
+            document.getElementById('userJoinDate')?.setAttribute('max', today);
+            
+            // Try to auto-login with demo credentials on page load
+            setTimeout(() => {
+                if (!auth.currentUser) {
+                    // Pre-fill demo credentials
+                    emailInput.value = 'admin@carskenya.com';
+                    passwordInput.value = 'password123';
+                }
+            }, 1000);
+        });
+
+        // Authentication Functions
+        async function handleLogin() {
+            showLoading('Logging in...');
+            const email = emailInput.value;
+            const password = passwordInput.value;
+
+            if (!email || !password) {
+                hideLoading();
+                showAlert('Please enter both email and password', 'error');
+                return;
+            }
+
+            try {
+                const userCredential = await auth.signInWithEmailAndPassword(email, password);
+                console.log('Login successful:', userCredential.user.email);
+                hideLoading();
+                showAlert('Login successful!', 'success');
+            } catch (error) {
+                console.error('Login error:', error);
+                
+                // Try to create demo user if login fails
+                if (email === 'admin@carskenya.com' && password === 'password123') {
+                    showAlert('Creating demo user...', 'success');
+                    await createDemoUser();
+                    // Try login again
+                    try {
+                        await auth.signInWithEmailAndPassword(email, password);
+                        hideLoading();
+                        showAlert('Demo user created and logged in!', 'success');
+                    } catch (secondError) {
+                        hideLoading();
+                        showAlert('Error: ' + secondError.message, 'error');
+                    }
+                } else {
+                    hideLoading();
+                    showAlert('Login failed: ' + error.message, 'error');
+                }
+            }
+        }
+
+        async function createDemoUser() {
+            try {
+                // First create auth user
+                const userCredential = await auth.createUserWithEmailAndPassword(
+                    'admin@carskenya.com', 
+                    'password123'
+                );
+                
+                // Then create user document
+                await db.collection('users').doc(userCredential.user.uid).set({
+                    uid: userCredential.user.uid,
+                    name: 'Admin User',
+                    email: 'admin@carskenya.com',
+                    department: 'Management',
+                    position: 'Administrator',
+                    role: ROLES.ADMIN,
+                    status: 'active',
+                    joinDate: firebase.firestore.FieldValue.serverTimestamp(),
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                // Update profile
+                await userCredential.user.updateProfile({
+                    displayName: 'Admin User'
+                });
+                
+                console.log('Demo user created successfully');
+                return true;
+            } catch (error) {
+                console.error('Error creating demo user:', error);
+                return false;
+            }
+        }
+
+        async function handleRegister() {
+            showLoading('Creating account...');
+            const name = document.getElementById('regName').value;
+            const email = document.getElementById('regEmail').value;
+            const password = document.getElementById('regPassword').value;
+            const confirmPassword = document.getElementById('regConfirmPassword').value;
+            const department = document.getElementById('regDepartment').value;
+            const position = document.getElementById('regPosition').value;
+
+            if (!name || !email || !password || !confirmPassword || !department || !position) {
+                hideLoading();
+                showAlert('Please fill all required fields', 'error');
+                return;
+            }
+
+            if (password !== confirmPassword) {
+                hideLoading();
+                showAlert('Passwords do not match', 'error');
+                return;
+            }
+
+            if (password.length < 6) {
+                hideLoading();
+                showAlert('Password must be at least 6 characters long', 'error');
+                return;
+            }
+
+            try {
+                // Create user in Firebase Authentication
+                const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                
+                // Create user document in Firestore
+                await db.collection('users').doc(userCredential.user.uid).set({
+                    uid: userCredential.user.uid,
+                    name: name,
+                    email: email,
+                    department: department,
+                    position: position,
+                    role: ROLES.EMPLOYEE, // Default role
+                    status: 'active',
+                    joinDate: firebase.firestore.FieldValue.serverTimestamp(),
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                // Update profile
+                await userCredential.user.updateProfile({
+                    displayName: name
+                });
+
+                hideLoading();
+                showAlert('Registration successful! You are now logged in.', 'success');
+                toggleAuthForms('login');
+            } catch (error) {
+                hideLoading();
+                showAlert('Registration failed: ' + error.message, 'error');
+            }
+        }
+
+        function handleLogout() {
+            showLoading('Logging out...');
+            setTimeout(() => {
+                auth.signOut();
+                hideLoading();
+                showAlert('Logged out successfully', 'success');
+            }, 500);
+        }
+
+        function toggleAuthForms(form) {
+            if (form === 'register') {
+                loginForm.style.display = 'none';
+                registerForm.style.display = 'block';
+            } else {
+                loginForm.style.display = 'block';
+                registerForm.style.display = 'none';
+            }
+        }
+
+        function showAlert(message, type) {
+            alertMessage.textContent = message;
+            alertMessage.className = `alert alert-${type}`;
+            alertMessage.style.display = 'block';
+            
+            setTimeout(() => {
+                alertMessage.style.display = 'none';
+            }, 5000);
+        }
+
+        function showLoginInterface() {
+            loginPage.style.display = 'flex';
+            appContainer.style.display = 'none';
+            toggleAuthForms('login');
+        }
+
+        async function showAppInterface() {
+            loginPage.style.display = 'none';
+            appContainer.style.display = 'block';
+            updateUserProfile();
+            updateMenuBasedOnRole();
+            navigateToPage('dashboard');
+        }
+
+        async function loadCurrentUserData() {
+            if (!currentUser) return;
+            
+            try {
+                const doc = await db.collection('users').doc(currentUser.uid).get();
+                if (doc.exists) {
+                    currentUserData = { id: doc.id, ...doc.data() };
+                    console.log('Current user data loaded:', currentUserData);
+                    updateUserProfile();
+                } else {
+                    // Create user data if it doesn't exist
+                    const displayName = currentUser.displayName || currentUser.email.split('@')[0];
+                    currentUserData = {
+                        id: currentUser.uid,
+                        name: displayName,
+                        email: currentUser.email,
+                        role: ROLES.EMPLOYEE,
+                        department: 'Not set',
+                        position: 'Employee',
+                        status: 'active'
+                    };
+                    await db.collection('users').doc(currentUser.uid).set({
+                        ...currentUserData,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    console.log('Created new user data:', currentUserData);
+                    updateUserProfile();
+                }
+            } catch (error) {
+                console.error('Error loading user data:', error);
+            }
+        }
+
+        function updateUserProfile() {
+            if (currentUserData) {
+                const displayName = currentUserData.name || currentUser?.email.split('@')[0] || 'User';
+                userName.textContent = displayName;
+                userRoleElement.textContent = currentUserData.role ? 
+                    currentUserData.role.charAt(0).toUpperCase() + currentUserData.role.slice(1) : 'Employee';
+                userAvatar.textContent = displayName.charAt(0).toUpperCase();
+            }
+        }
+
+        function updateMenuBasedOnRole() {
+            if (!currentUserData) return;
+
+            const permissions = PERMISSIONS[currentUserData.role] || PERMISSIONS[ROLES.EMPLOYEE];
+            
+            // Show/hide menu items based on permissions
+            document.getElementById('approvalsMenuItem').style.display = 
+                permissions.canApproveRequests ? 'flex' : 'none';
+            
+            document.getElementById('userManagementMenuItem').style.display = 
+                permissions.canManageUsers ? 'flex' : 'none';
+            
+            document.getElementById('reportsMenuItem').style.display = 
+                permissions.canViewReports ? 'flex' : 'none';
+            
+            document.getElementById('employeesMenuItem').style.display = 
+                permissions.canManageEmployees ? 'flex' : 'none';
+        }
+
+        function checkPermission(permission) {
+            if (!currentUserData) return false;
+            const permissions = PERMISSIONS[currentUserData.role] || PERMISSIONS[ROLES.EMPLOYEE];
+            return permissions[permission] || false;
+        }
+
+        // Navigation
+        function navigateToPage(page) {
+            if (!checkPermission('canCreateRequests') && 
+                ['requisition', 'leave', 'offday'].includes(page)) {
+                showAlert('You do not have permission to create requests', 'error');
+                return;
+            }
+
+            // Update active menu item
+            document.querySelectorAll('.menu-item').forEach(item => {
+                if (item.getAttribute('data-page') === page) {
+                    item.classList.add('active');
+                } else {
+                    item.classList.remove('active');
+                }
+            });
+
+            // Show selected page
+            document.querySelectorAll('.page-content').forEach(content => {
+                if (content.id === `${page}Content`) {
+                    content.style.display = 'block';
+                } else {
+                    content.style.display = 'none';
+                }
+            });
+
+            // Load page specific data
+            switch(page) {
+                case 'dashboard':
+                    loadDashboardData();
+                    break;
+                case 'requisition':
+                case 'leave':
+                case 'offday':
+                    populateUserDropdowns();
+                    break;
+                case 'myRequests':
+                    loadMyRequests();
+                    break;
+                case 'orgChart':
+                    loadOrgChart();
+                    break;
+                case 'jobDescriptions':
+                    loadJobDescriptions();
+                    break;
+                case 'calendar':
+                    loadCalendar();
+                    break;
+                case 'approvals':
+                    if (checkPermission('canApproveRequests')) {
+                        loadApprovals();
+                    }
+                    break;
+                case 'userManagement':
+                    if (checkPermission('canManageUsers')) {
+                        loadUsersTable();
+                    }
+                    break;
+                case 'employees':
+                    if (checkPermission('canManageEmployees')) {
+                        loadEmployees();
+                    }
+                    break;
+                case 'reports':
+                    if (checkPermission('canViewReports')) {
+                        loadReports();
+                    }
+                    break;
+            }
+        }
+
+        function switchTab(tabName) {
+            // Update active tab
+            document.querySelectorAll('.tab').forEach(tab => {
+                if (tab.getAttribute('data-tab') === tabName) {
+                    tab.classList.add('active');
+                } else {
+                    tab.classList.remove('active');
+                }
+            });
+
+            // Show selected tab content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                if (content.id === `${tabName}Tab`) {
+                    content.classList.add('active');
+                } else {
+                    content.classList.remove('active');
+                }
+            });
+
+            // Load tab data
+            if (tabName === 'pending') {
+                loadApprovalsTable();
+            } else if (tabName === 'approved') {
+                loadApprovedTable();
+            } else if (tabName === 'rejected') {
+                loadRejectedTable();
+            }
+        }
+
+        // Data Loading Functions
+        async function loadUsers() {
+            try {
+                const snapshot = await db.collection('users').get();
+                users = [];
+                snapshot.forEach(doc => {
+                    users.push({ id: doc.id, ...doc.data() });
+                });
+                console.log('Loaded users:', users.length);
+            } catch (error) {
+                console.error('Error loading users:', error);
+                // Create demo users if none exist
+                await createDemoUsers();
+                await loadUsers(); // Reload users
+            }
+        }
+
+        async function createDemoUsers() {
+            try {
+                console.log('Creating demo users...');
+                
+                // Check if users already exist
+                const snapshot = await db.collection('users').get();
+                if (snapshot.size > 0) {
+                    console.log('Users already exist, skipping demo creation');
+                    return;
+                }
+
+                // Create demo admin user (already created in createDemoUser)
+                // Create additional demo users
+                const demoUsers = [
+                    {
+                        email: 'manager@carskenya.com',
+                        name: 'John Manager',
+                        role: ROLES.MANAGER,
+                        department: 'Operations',
+                        position: 'Operations Manager',
+                        status: 'active'
+                    },
+                    {
+                        email: 'hr@carskenya.com',
+                        name: 'Sarah HR',
+                        role: ROLES.HR,
+                        department: 'Human Resources',
+                        position: 'HR Manager',
+                        status: 'active'
+                    },
+                    {
+                        email: 'employee@carskenya.com',
+                        name: 'Mike Employee',
+                        role: ROLES.EMPLOYEE,
+                        department: 'Sales',
+                        position: 'Sales Executive',
+                        status: 'active'
+                    }
+                ];
+
+                // Note: These users won't have auth accounts, but they'll exist in Firestore
+                // For a real app, you'd create auth accounts too
+                for (const user of demoUsers) {
+                    await db.collection('users').add({
+                        ...user,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                }
+                
+                console.log('Demo users created');
+            } catch (error) {
+                console.error('Error creating demo users:', error);
+            }
+        }
+
+        function populateUserDropdowns() {
+            const approverDropdowns = ['approver', 'leaveApprover', 'offdayApprover'];
+            const ccDropdown = document.getElementById('ccUsers');
+
+            approverDropdowns.forEach(dropdownId => {
+                const dropdown = document.getElementById(dropdownId);
+                if (dropdown) {
+                    dropdown.innerHTML = '<option value="">Select approver</option>';
+                    users.forEach(user => {
+                        if (user.id !== currentUser?.uid && 
+                            (user.role === ROLES.MANAGER || user.role === ROLES.HR || user.role === ROLES.ADMIN)) {
+                            const option = document.createElement('option');
+                            option.value = user.id;
+                            option.textContent = `${user.name} (${user.role})`;
+                            dropdown.appendChild(option);
+                        }
+                    });
+                }
+            });
+
+            if (ccDropdown) {
+                ccDropdown.innerHTML = '';
+                users.forEach(user => {
+                    if (user.id !== currentUser?.uid) {
+                        const option = document.createElement('option');
+                        option.value = user.id;
+                        option.textContent = `${user.name} (${user.role})`;
+                        ccDropdown.appendChild(option);
+                    }
+                });
+            }
+        }
+
+        async function loadNotifications() {
+            if (!currentUser) return;
+
+            try {
+                const snapshot = await db.collection('notifications')
+                    .where('userId', '==', currentUser.uid)
+                    .orderBy('timestamp', 'desc')
+                    .limit(10)
+                    .get();
+
+                notifications = [];
+                snapshot.forEach(doc => {
+                    notifications.push({ id: doc.id, ...doc.data() });
+                });
+
+                updateNotificationDisplay();
+            } catch (error) {
+                console.error('Error loading notifications:', error);
+            }
+        }
+
+        function updateNotificationDisplay() {
+            const unreadCount = notifications.filter(n => !n.read).length;
+            notificationCount.textContent = unreadCount;
+
+            // Populate notification dropdown
+            notificationContainer.innerHTML = '';
+            notifications.forEach(notification => {
+                const item = document.createElement('div');
+                item.className = `notification-item ${notification.read ? '' : 'unread'}`;
+                item.innerHTML = `
+                    <strong>${notification.title}</strong>
+                    <p style="margin: 5px 0; font-size: 14px;">${notification.message}</p>
+                    <small>${formatDate(notification.timestamp?.toDate())}</small>
+                `;
+                item.addEventListener('click', () => viewNotification(notification));
+                notificationContainer.appendChild(item);
+            });
+        }
+
+        function toggleNotifications() {
+            notificationContainer.style.display = 
+                notificationContainer.style.display === 'block' ? 'none' : 'block';
+        }
+
+        async function createNotification(userId, title, message, type, requestId) {
+            try {
+                await db.collection('notifications').add({
+                    userId,
+                    title,
+                    message,
+                    type,
+                    requestId,
+                    read: false,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                // Reload notifications for the user
+                if (userId === currentUser.uid) {
+                    loadNotifications();
+                }
+            } catch (error) {
+                console.error('Error creating notification:', error);
+            }
+        }
+
+        // NEW FEATURES: Enhanced Requisition Functions
+        function initializeRequisitionItems() {
+            requisitionItems = [];
+            addRequisitionItem(); // Add one empty item by default
+        }
+
+        function addRequisitionItem() {
+            const itemId = Date.now() + Math.random();
+            requisitionItems.push({
+                id: itemId,
+                description: '',
+                quantity: 1,
+                price: 0,
+                total: 0
+            });
+            
+            renderRequisitionItems();
+        }
+
+        function removeRequisitionItem(itemId) {
+            requisitionItems = requisitionItems.filter(item => item.id !== itemId);
+            renderRequisitionItems();
+            calculateTotal();
+        }
+
+        function updateRequisitionItem(itemId, field, value) {
+            const item = requisitionItems.find(i => i.id === itemId);
+            if (item) {
+                item[field] = field === 'quantity' || field === 'price' ? parseFloat(value) || 0 : value;
+                item.total = item.quantity * item.price;
+                calculateTotal();
+            }
+        }
+
+        function renderRequisitionItems() {
+            itemsTableBody.innerHTML = '';
+            
+            requisitionItems.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>
+                        <input type="text" 
+                               value="${item.description}" 
+                               onchange="updateRequisitionItem('${item.id}', 'description', this.value)"
+                               placeholder="Item description" required>
+                    </td>
+                    <td>
+                        <input type="number" 
+                               value="${item.quantity}" 
+                               onchange="updateRequisitionItem('${item.id}', 'quantity', this.value)"
+                               min="1" step="1" required>
+                    </td>
+                    <td>
+                        <input type="number" 
+                               value="${item.price}" 
+                               onchange="updateRequisitionItem('${item.id}', 'price', this.value)"
+                               min="0" step="0.01" required>
+                    </td>
+                    <td>
+                        ${selectedCurrency} ${(item.total * exchangeRates[selectedCurrency]).toFixed(2)}
+                    </td>
+                    <td>
+                        <button type="button" class="btn-danger action-btn" onclick="removeRequisitionItem('${item.id}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+                itemsTableBody.appendChild(row);
+            });
+            
+            calculateTotal();
+        }
+
+        function calculateTotal() {
+            let total = requisitionItems.reduce((sum, item) => sum + item.total, 0);
+            total = total * exchangeRates[selectedCurrency];
+            totalAmountElement.textContent = total.toFixed(2);
+        }
+
+        // NEW FEATURES: Organizational Chart Functions
+        async function loadOrgChart() {
+            showLoading('Loading organizational chart...');
+            try {
+                const departmentFilter = document.getElementById('departmentFilter').value;
+                let filteredUsers = users;
+                
+                if (departmentFilter !== 'all') {
+                    filteredUsers = users.filter(user => user.department === departmentFilter);
+                }
+                
+                // Sort users by hierarchy
+                const sortedUsers = filteredUsers.sort((a, b) => {
+                    const roleOrder = { admin: 1, hr: 2, manager: 3, employee: 4 };
+                    return roleOrder[a.role] - roleOrder[b.role];
+                });
+                
+                const orgChartContainer = document.getElementById('orgChart');
+                orgChartContainer.innerHTML = '';
+                
+                // Group by role for hierarchical display
+                const roles = {
+                    admin: sortedUsers.filter(u => u.role === 'admin'),
+                    hr: sortedUsers.filter(u => u.role === 'hr'),
+                    manager: sortedUsers.filter(u => u.role === 'manager'),
+                    employee: sortedUsers.filter(u => u.role === 'employee')
+                };
+                
+                let html = '';
+                
+                // CEO/Admin Level
+                if (roles.admin.length > 0) {
+                    html += '<div class="org-level">';
+                    roles.admin.forEach(user => {
+                        html += `
+                            <div class="org-node ceo" onclick="viewEmployee('${user.id}')">
+                                <h3>${user.name}</h3>
+                                <p>${user.position}</p>
+                                <p><small>${user.department}</small></p>
+                            </div>
+                        `;
+                    });
+                    html += '</div><div class="org-connector"></div>';
+                }
+                
+                // HR/Management Level
+                const managementUsers = [...roles.hr, ...roles.manager];
+                if (managementUsers.length > 0) {
+                    html += '<div class="org-level">';
+                    managementUsers.forEach(user => {
+                        const nodeClass = user.role === 'hr' ? 'manager' : 'manager';
+                        html += `
+                            <div class="org-node ${nodeClass}" onclick="viewEmployee('${user.id}')">
+                                <h3>${user.name}</h3>
+                                <p>${user.position}</p>
+                                <p><small>${user.department}</small></p>
+                            </div>
+                        `;
+                    });
+                    html += '</div><div class="org-connector"></div>';
+                }
+                
+                // Employee Level
+                if (roles.employee.length > 0) {
+                    html += '<div class="org-level">';
+                    // Group employees by department
+                    const employeesByDept = {};
+                    roles.employee.forEach(emp => {
+                        if (!employeesByDept[emp.department]) {
+                            employeesByDept[emp.department] = [];
+                        }
+                        employeesByDept[emp.department].push(emp);
+                    });
+                    
+                    Object.entries(employeesByDept).forEach(([dept, deptEmployees]) => {
+                        html += '<div style="margin: 0 10px;">';
+                        html += `<h4 style="text-align: center; margin-bottom: 10px;">${dept}</h4>`;
+                        html += '<div class="org-children">';
+                        deptEmployees.forEach(emp => {
+                            html += `
+                                <div class="org-node employee" onclick="viewEmployee('${emp.id}')">
+                                    <h4>${emp.name}</h4>
+                                    <p>${emp.position}</p>
+                                </div>
+                            `;
+                        });
+                        html += '</div></div>';
+                    });
+                    html += '</div>';
+                }
+                
+                orgChartContainer.innerHTML = html;
+                hideLoading();
+            } catch (error) {
+                console.error('Error loading org chart:', error);
+                hideLoading();
+                showAlert('Error loading organizational chart', 'error');
+            }
+        }
+
+        // NEW FEATURES: Job Description Functions
+        async function loadJobDescriptions() {
+            showLoading('Loading job descriptions...');
+            try {
+                const jobFilter = document.getElementById('jobFilter').value;
+                
+                const jobDescriptions = {
+                    'Administrator': {
+                        title: 'Administrator',
+                        department: 'Management',
+                        summary: 'Oversees all HR operations and system administration.',
+                        responsibilities: [
+                            'Manage user accounts and permissions',
+                            'Oversee system configuration and maintenance',
+                            'Generate reports and analytics',
+                            'Handle escalated HR issues',
+                            'Coordinate with department heads'
+                        ],
+                        requirements: [
+                            'Bachelor\'s degree in HR or related field',
+                            '5+ years of HR experience',
+                            'Strong leadership skills',
+                            'Excellent communication skills',
+                            'Technical proficiency in HR systems'
+                        ],
+                        salaryRange: 'KES 150,000 - 300,000'
+                    },
+                    'Manager': {
+                        title: 'Manager',
+                        department: 'Operations',
+                        summary: 'Manages department operations and team performance.',
+                        responsibilities: [
+                            'Supervise team members',
+                            'Approve requisitions and leave requests',
+                            'Monitor team performance',
+                            'Conduct performance reviews',
+                            'Develop team training programs'
+                        ],
+                        requirements: [
+                            'Bachelor\'s degree in relevant field',
+                            '3+ years of management experience',
+                            'Strong organizational skills',
+                            'Good decision-making abilities',
+                            'Team leadership experience'
+                        ],
+                        salaryRange: 'KES 120,000 - 250,000'
+                    },
+                    'HR Manager': {
+                        title: 'HR Manager',
+                        department: 'Human Resources',
+                        summary: 'Manages human resources functions and employee relations.',
+                        responsibilities: [
+                            'Recruit and onboard new employees',
+                            'Handle employee relations',
+                            'Manage benefits and compensation',
+                            'Ensure compliance with labor laws',
+                            'Develop HR policies and procedures'
+                        ],
+                        requirements: [
+                            'Bachelor\'s degree in Human Resources',
+                            '4+ years of HR experience',
+                            'Knowledge of labor laws',
+                            'Excellent interpersonal skills',
+                            'Recruitment experience'
+                        ],
+                        salaryRange: 'KES 130,000 - 270,000'
+                    },
+                    'Sales Executive': {
+                        title: 'Sales Executive',
+                        department: 'Sales',
+                        summary: 'Drives sales and maintains client relationships.',
+                        responsibilities: [
+                            'Achieve sales targets',
+                            'Maintain client relationships',
+                            'Generate leads and proposals',
+                            'Conduct product demonstrations',
+                            'Prepare sales reports'
+                        ],
+                        requirements: [
+                            'Bachelor\'s degree in Business or Marketing',
+                            '2+ years of sales experience',
+                            'Excellent communication skills',
+                            'Proven sales track record',
+                            'Customer service orientation'
+                        ],
+                        salaryRange: 'KES 80,000 - 180,000 + Commission'
+                    }
+                };
+                
+                const container = document.getElementById('jobDescriptionsContainer');
+                container.innerHTML = '';
+                
+                Object.entries(jobDescriptions).forEach(([title, job]) => {
+                    if (jobFilter === 'all' || jobFilter === title) {
+                        const jobCard = document.createElement('div');
+                        jobCard.className = 'job-description-container';
+                        jobCard.style.marginBottom = '20px';
+                        jobCard.innerHTML = `
+                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 20px;">
+                                <div>
+                                    <h2>${job.title}</h2>
+                                    <p><strong>Department:</strong> ${job.department}</p>
+                                </div>
+                                <button class="btn" onclick="viewJobDescription('${title}')">View Details</button>
+                            </div>
+                            <p><strong>Summary:</strong> ${job.summary}</p>
+                            <div class="job-details-grid">
+                                <div class="job-section">
+                                    <h3>Key Responsibilities</h3>
+                                    <ul>
+                                        ${job.responsibilities.map(resp => `<li>${resp}</li>`).join('')}
+                                    </ul>
+                                </div>
+                                <div class="job-section">
+                                    <h3>Requirements</h3>
+                                    <ul>
+                                        ${job.requirements.map(req => `<li>${req}</li>`).join('')}
+                                    </ul>
+                                </div>
+                            </div>
+                            <p><strong>Salary Range:</strong> ${job.salaryRange}</p>
+                        `;
+                        container.appendChild(jobCard);
+                    }
+                });
+                
+                hideLoading();
+            } catch (error) {
+                console.error('Error loading job descriptions:', error);
+                hideLoading();
+                showAlert('Error loading job descriptions', 'error');
+            }
+        }
+
+        function viewJobDescription(title) {
+            const jobDescriptions = {
+                'Administrator': {
+                    title: 'Administrator',
+                    department: 'Management',
+                    summary: 'Oversees all HR operations and system administration for Cars Kenya.',
+                    responsibilities: [
+                        'Manage user accounts, permissions, and access control',
+                        'Oversee system configuration, maintenance, and updates',
+                        'Generate comprehensive reports and analytics for management',
+                        'Handle escalated HR issues and conflict resolution',
+                        'Coordinate with department heads on staffing needs',
+                        'Ensure data security and privacy compliance',
+                        'Develop and implement HR policies and procedures',
+                        'Manage budget and resource allocation'
+                    ],
+                    requirements: [
+                        'Bachelor\'s degree in HR, Business Administration, or related field',
+                        '5+ years of progressive HR experience with 2+ years in administration',
+                        'Strong leadership and decision-making skills',
+                        'Excellent verbal and written communication skills',
+                        'Technical proficiency in HR systems and software',
+                        'Knowledge of Kenyan labor laws and regulations',
+                        'Project management experience',
+                        'Professional HR certification preferred'
+                    ],
+                    qualifications: [
+                        'Master\'s degree in HR or MBA (preferred)',
+                        'Professional certification (CHRP, SHRM, etc.)',
+                        'Experience in automotive industry (advantageous)'
+                    ],
+                    salaryRange: 'KES 150,000 - 300,000 per month',
+                    benefits: [
+                        'Health insurance',
+                        'Retirement benefits',
+                        'Annual bonus',
+                        'Professional development allowance',
+                        'Company car allowance'
+                    ]
+                },
+                'Manager': {
+                    title: 'Manager',
+                    department: 'Operations',
+                    summary: 'Manages department operations and ensures team performance targets are met.',
+                    responsibilities: [
+                        'Supervise and mentor team members',
+                        'Approve requisitions, leave requests, and other departmental approvals',
+                        'Monitor and report on team performance metrics',
+                        'Conduct regular performance reviews and feedback sessions',
+                        'Develop and implement team training programs',
+                        'Coordinate with other departments for seamless operations',
+                        'Manage departmental budget and resources',
+                        'Implement process improvements'
+                    ],
+                    requirements: [
+                        'Bachelor\'s degree in Business, Management, or related field',
+                        '3+ years of management experience',
+                        'Strong organizational and planning skills',
+                        'Excellent decision-making and problem-solving abilities',
+                        'Proven team leadership experience',
+                        'Good understanding of operational processes',
+                        'Excellent communication and interpersonal skills'
+                    ],
+                    qualifications: [
+                        'Master\'s degree in Management or MBA',
+                        'Certification in project management',
+                        'Experience in automotive or manufacturing industry'
+                    ],
+                    salaryRange: 'KES 120,000 - 250,000 per month',
+                    benefits: [
+                        'Health insurance',
+                        'Performance bonus',
+                        'Training opportunities',
+                        'Transport allowance',
+                        'Annual leave days'
+                    ]
+                }
+                // Add more job descriptions as needed
+            };
+            
+            const job = jobDescriptions[title];
+            if (!job) return;
+            
+            const modal = document.getElementById('jobDescriptionModal');
+            const modalTitle = document.getElementById('jobModalTitle');
+            const modalBody = document.getElementById('jobModalBody');
+            
+            modalTitle.textContent = `${job.title} - Job Description`;
+            modalBody.innerHTML = `
+                <div style="margin-bottom: 20px;">
+                    <p><strong>Position Title:</strong> ${job.title}</p>
+                    <p><strong>Department:</strong> ${job.department}</p>
+                    <p><strong>Reports To:</strong> ${title === 'Administrator' ? 'CEO' : 'Department Head'}</p>
+                    <p><strong>Location:</strong> Nairobi, Kenya</p>
+                    <p><strong>Employment Type:</strong> Full-time</p>
+                </div>
+                
+                <div class="job-section">
+                    <h3>Job Summary</h3>
+                    <p>${job.summary}</p>
+                </div>
+                
+                <div class="job-section">
+                    <h3>Key Responsibilities</h3>
+                    <ul>
+                        ${job.responsibilities.map(resp => `<li>${resp}</li>`).join('')}
+                    </ul>
+                </div>
+                
+                <div class="job-details-grid">
+                    <div class="job-section">
+                        <h3>Requirements</h3>
+                        <ul>
+                            ${job.requirements.map(req => `<li>${req}</li>`).join('')}
+                        </ul>
+                    </div>
+                    
+                    ${job.qualifications ? `
+                    <div class="job-section">
+                        <h3>Preferred Qualifications</h3>
+                        <ul>
+                            ${job.qualifications.map(qual => `<li>${qual}</li>`).join('')}
+                        </ul>
+                    </div>
+                    ` : ''}
+                </div>
+                
+                <div class="job-section">
+                    <h3>Compensation & Benefits</h3>
+                    <p><strong>Salary Range:</strong> ${job.salaryRange}</p>
+                    ${job.benefits ? `
+                    <p><strong>Benefits:</strong></p>
+                    <ul>
+                        ${job.benefits.map(benefit => `<li>${benefit}</li>`).join('')}
+                    </ul>
+                    ` : ''}
+                </div>
+                
+                <div class="job-section">
+                    <h3>Application Process</h3>
+                    <p>To apply for this position, please submit your CV and cover letter through the internal job portal or contact HR department.</p>
+                </div>
+            `;
+            
+            modal.style.display = 'flex';
+        }
+
+        // NEW FEATURES: Calendar Functions
+        function loadCalendar() {
+            showLoading('Loading calendar...');
+            try {
+                // Update month/year display
+                const monthNames = [
+                    'January', 'February', 'March', 'April', 'May', 'June',
+                    'July', 'August', 'September', 'October', 'November', 'December'
+                ];
+                currentMonthYearElement.textContent = `${monthNames[currentMonth]} ${currentYear}`;
+                
+                // Generate calendar grid
+                const firstDay = new Date(currentYear, currentMonth, 1);
+                const lastDay = new Date(currentYear, currentMonth + 1, 0);
+                const daysInMonth = lastDay.getDate();
+                const startingDay = firstDay.getDay(); // 0 = Sunday, 1 = Monday, etc.
+                
+                // Get today's date
+                const today = new Date();
+                const isToday = (day) => {
+                    return day === today.getDate() && 
+                           currentMonth === today.getMonth() && 
+                           currentYear === today.getFullYear();
+                };
+                
+                // Clear previous calendar
+                calendarGrid.innerHTML = '';
+                
+                // Add day headers
+                const dayHeaders = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                dayHeaders.forEach(day => {
+                    const header = document.createElement('div');
+                    header.className = 'calendar-day-header';
+                    header.textContent = day;
+                    calendarGrid.appendChild(header);
+                });
+                
+                // Add empty cells for days before the first day of the month
+                for (let i = 0; i < startingDay; i++) {
+                    const emptyDay = document.createElement('div');
+                    emptyDay.className = 'calendar-day other-month';
+                    calendarGrid.appendChild(emptyDay);
+                }
+                
+                // Add days of the month
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const dayElement = document.createElement('div');
+                    dayElement.className = 'calendar-day';
+                    
+                    // Check if today
+                    if (isToday(day)) {
+                        dayElement.classList.add('today');
+                    }
+                    
+                    // Create date string for holiday checking
+                    const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                    
+                    // Check for holidays
+                    const keHoliday = holidays.KE.find(h => h.date === dateStr);
+                    const jpHoliday = holidays.JP.find(h => h.date === dateStr);
+                    
+                    let eventsHtml = '';
+                    if (keHoliday) {
+                        eventsHtml += `<div class="calendar-event holiday-ke">🇰🇪 ${keHoliday.name}</div>`;
+                        dayElement.classList.add('has-event');
+                    }
+                    if (jpHoliday) {
+                        eventsHtml += `<div class="calendar-event holiday-jp">🇯🇵 ${jpHoliday.name}</div>`;
+                        dayElement.classList.add('has-event');
+                    }
+                    
+                    // Add company events (you can expand this with real data from Firebase)
+                    // For now, we'll add some sample events
+                    if (day === 15) {
+                        eventsHtml += `<div class="calendar-event" style="background-color: #a29bfe; color: white;">Monthly Meeting</div>`;
+                        dayElement.classList.add('has-event');
+                    }
+                    if (day === 20 && currentMonth === 1) { // February 20
+                        eventsHtml += `<div class="calendar-event" style="background-color: #fd79a8; color: white;">Team Building</div>`;
+                        dayElement.classList.add('has-event');
+                    }
+                    
+                    dayElement.innerHTML = `
+                        <div class="day-number">${day}</div>
+                        ${eventsHtml}
+                    `;
+                    
+                    // Add click event to view day details
+                    dayElement.addEventListener('click', () => viewDayDetails(dateStr, keHoliday, jpHoliday));
+                    
+                    calendarGrid.appendChild(dayElement);
+                }
+                
+                // Add empty cells for days after the last day of the month
+                const totalCells = 42; // 6 weeks * 7 days
+                const filledCells = startingDay + daysInMonth;
+                for (let i = filledCells; i < totalCells; i++) {
+                    const emptyDay = document.createElement('div');
+                    emptyDay.className = 'calendar-day other-month';
+                    calendarGrid.appendChild(emptyDay);
+                }
+                
+                hideLoading();
+            } catch (error) {
+                console.error('Error loading calendar:', error);
+                hideLoading();
+                showAlert('Error loading calendar', 'error');
+            }
+        }
+
+        function previousMonth() {
+            currentMonth--;
+            if (currentMonth < 0) {
+                currentMonth = 11;
+                currentYear--;
+            }
+            loadCalendar();
+        }
+
+        function nextMonth() {
+            currentMonth++;
+            if (currentMonth > 11) {
+                currentMonth = 0;
+                currentYear++;
+            }
+            loadCalendar();
+        }
+
+        function goToToday() {
+            const today = new Date();
+            currentMonth = today.getMonth();
+            currentYear = today.getFullYear();
+            loadCalendar();
+        }
+
+        function viewDayDetails(dateStr, keHoliday, jpHoliday) {
+            const date = new Date(dateStr);
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            const formattedDate = date.toLocaleDateString('en-US', options);
+            
+            const modal = document.getElementById('calendarEventModal');
+            const modalBody = document.getElementById('eventModalBody');
+            
+            let eventsHtml = '';
+            if (keHoliday) {
+                eventsHtml += `
+                    <div style="background-color: #ffeaa7; padding: 10px; border-radius: 5px; margin-bottom: 10px;">
+                        <strong>🇰🇪 Kenyan Holiday</strong><br>
+                        ${keHoliday.name}
+                    </div>
+                `;
+            }
+            if (jpHoliday) {
+                eventsHtml += `
+                    <div style="background-color: #fab1a0; padding: 10px; border-radius: 5px; margin-bottom: 10px;">
+                        <strong>🇯🇵 Japanese Holiday</strong><br>
+                        ${jpHoliday.name}
+                    </div>
+                `;
+            }
+            
+            // Add company events based on date
+            const day = date.getDate();
+            const month = date.getMonth();
+            if (day === 15) {
+                eventsHtml += `
+                    <div style="background-color: #a29bfe; padding: 10px; border-radius: 5px; margin-bottom: 10px; color: white;">
+                        <strong>Monthly Meeting</strong><br>
+                        Time: 10:00 AM<br>
+                        Location: Conference Room A<br>
+                        All department heads required
+                    </div>
+                `;
+            }
+            if (day === 20 && month === 1) { // February 20
+                eventsHtml += `
+                    <div style="background-color: #fd79a8; padding: 10px; border-radius: 5px; margin-bottom: 10px; color: white;">
+                        <strong>Team Building Event</strong><br>
+                        Time: 9:00 AM - 4:00 PM<br>
+                        Location: Nairobi National Park<br>
+                        Bring: Comfortable shoes, sunscreen
+                    </div>
+                `;
+            }
+            
+            if (!eventsHtml) {
+                eventsHtml = '<p>No events scheduled for this day.</p>';
+            }
+            
+            modalBody.innerHTML = `
+                <h3>${formattedDate}</h3>
+                <div style="margin-top: 20px;">
+                    <h4>Events & Holidays</h4>
+                    ${eventsHtml}
+                </div>
+                <div style="margin-top: 20px;">
+                    <button class="btn" onclick="addEventToCalendar('${dateStr}')">Add Event</button>
+                </div>
+            `;
+            
+            modal.style.display = 'flex';
+        }
+
+        function addEventToCalendar(dateStr) {
+            const eventName = prompt('Enter event name:');
+            if (!eventName) return;
+            
+            const eventTime = prompt('Enter event time (e.g., 10:00 AM):', '10:00 AM');
+            const eventLocation = prompt('Enter event location:', 'Office');
+            
+            // In a real app, you would save this to Firebase
+            showAlert(`Event "${eventName}" added to ${dateStr}`, 'success');
+            document.getElementById('calendarEventModal').style.display = 'none';
+            
+            // Reload calendar to show new event
+            loadCalendar();
+        }
+
+        // Request Functions
+        async function submitRequisition(e) {
+            e.preventDefault();
+            showLoading('Submitting requisition...');
+            
+            // Validate items
+            if (requisitionItems.length === 0) {
+                hideLoading();
+                showAlert('Please add at least one item', 'error');
+                return;
+            }
+            
+            const emptyItems = requisitionItems.filter(item => !item.description.trim() || item.price <= 0);
+            if (emptyItems.length > 0) {
+                hideLoading();
+                showAlert('Please fill in all item details and ensure prices are greater than 0', 'error');
+                return;
+            }
+            
+            const approverId = document.getElementById('approver').value;
+            if (!approverId) {
+                hideLoading();
+                showAlert('Please select an approver', 'error');
+                return;
+            }
+
+            const requisition = {
+                type: 'requisition',
+                title: document.getElementById('requisitionTitle').value,
+                requisitionType: document.getElementById('requisitionType').value,
+                items: requisitionItems,
+                currency: selectedCurrency,
+                amount: requisitionItems.reduce((sum, item) => sum + item.total, 0) * exchangeRates[selectedCurrency],
+                description: document.getElementById('requisitionDescription').value,
+                priority: document.getElementById('requisitionPriority').value,
+                expectedDate: document.getElementById('expectedDate').value,
+                requestorId: currentUser.uid,
+                requestorName: currentUserData?.name || currentUser?.email?.split('@')[0] || 'Unknown',
+                requestorDepartment: currentUserData?.department || 'Not set',
+                approverId: approverId,
+                ccUsers: Array.from(document.getElementById('ccUsers').selectedOptions).map(o => o.value),
+                status: 'pending',
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            try {
+                const docRef = await db.collection('requests').add(requisition);
+                
+                // Create notification for approver
+                const approver = users.find(u => u.id === approverId);
+                await createNotification(
+                    approverId,
+                    'New Requisition Request',
+                    `${requisition.requestorName} submitted a new requisition: ${requisition.title}`,
+                    'requisition',
+                    docRef.id
+                );
+
+                // Create notifications for CC users
+                requisition.ccUsers.forEach(async ccUserId => {
+                    await createNotification(
+                        ccUserId,
+                        'Requisition CC',
+                        `You were CC'd on a requisition from ${requisition.requestorName}`,
+                        'requisition',
+                        docRef.id
+                    );
+                });
+
+                hideLoading();
+                showAlert('Requisition submitted successfully!', 'success');
+                document.getElementById('requisitionForm').reset();
+                initializeRequisitionItems();
+                navigateToPage('myRequests');
+            } catch (error) {
+                console.error('Error submitting requisition:', error);
+                hideLoading();
+                showAlert('Error submitting requisition. Please try again.', 'error');
+            }
+        }
+
+        async function submitLeave(e) {
+            e.preventDefault();
+            showLoading('Submitting leave request...');
+            
+            const approverId = document.getElementById('leaveApprover').value;
+            if (!approverId) {
+                hideLoading();
+                showAlert('Please select an approver', 'error');
+                return;
+            }
+
+            const startDate = new Date(document.getElementById('leaveStart').value);
+            const endDate = new Date(document.getElementById('leaveEnd').value);
+            
+            if (endDate < startDate) {
+                hideLoading();
+                showAlert('End date cannot be before start date', 'error');
+                return;
+            }
+
+            // Calculate days difference
+            const timeDiff = endDate.getTime() - startDate.getTime();
+            const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
+
+            if (daysDiff <= 0) {
+                hideLoading();
+                showAlert('Leave duration must be at least 1 day', 'error');
+                return;
+            }
+
+            const leaveRequest = {
+                type: 'leave',
+                leaveType: document.getElementById('leaveType').value,
+                days: daysDiff,
+                startDate: document.getElementById('leaveStart').value,
+                endDate: document.getElementById('leaveEnd').value,
+                reason: document.getElementById('leaveReason').value,
+                requestorId: currentUser.uid,
+                requestorName: currentUserData?.name || currentUser?.email?.split('@')[0] || 'Unknown',
+                requestorDepartment: currentUserData?.department || 'Not set',
+                approverId: approverId,
+                status: 'pending',
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            try {
+                const docRef = await db.collection('requests').add(leaveRequest);
+                
+                // Create notification for approver
+                const approver = users.find(u => u.id === approverId);
+                await createNotification(
+                    approverId,
+                    'New Leave Request',
+                    `${leaveRequest.requestorName} submitted a leave request for ${daysDiff} days`,
+                    'leave',
+                    docRef.id
+                );
+
+                hideLoading();
+                showAlert('Leave request submitted successfully!', 'success');
+                document.getElementById('leaveForm').reset();
+                navigateToPage('myRequests');
+            } catch (error) {
+                console.error('Error submitting leave request:', error);
+                hideLoading();
+                showAlert('Error submitting leave request. Please try again.', 'error');
+            }
+        }
+
+        async function submitOffDay(e) {
+            e.preventDefault();
+            showLoading('Submitting off day request...');
+            
+            const approverId = document.getElementById('offdayApprover').value;
+            if (!approverId) {
+                hideLoading();
+                showAlert('Please select an approver', 'error');
+                return;
+            }
+
+            const offDayRequest = {
+                type: 'offday',
+                date: document.getElementById('offdayDate').value,
+                reason: document.getElementById('offdayReason').value,
+                description: document.getElementById('offdayDescription').value,
+                requestorId: currentUser.uid,
+                requestorName: currentUserData?.name || currentUser?.email?.split('@')[0] || 'Unknown',
+                requestorDepartment: currentUserData?.department || 'Not set',
+                approverId: approverId,
+                status: 'pending',
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            try {
+                const docRef = await db.collection('requests').add(offDayRequest);
+                
+                // Create notification for approver
+                const approver = users.find(u => u.id === approverId);
+                await createNotification(
+                    approverId,
+                    'New Off Day Request',
+                    `${offDayRequest.requestorName} requested an off day on ${offDayRequest.date}`,
+                    'offday',
+                    docRef.id
+                );
+
+                hideLoading();
+                showAlert('Off day request submitted successfully!', 'success');
+                document.getElementById('offdayForm').reset();
+                navigateToPage('myRequests');
+            } catch (error) {
+                console.error('Error submitting off day request:', error);
+                hideLoading();
+                showAlert('Error submitting off day request. Please try again.', 'error');
+            }
+        }
+
+        async function loadDashboardData() {
+            showLoading('Loading dashboard data...');
+            try {
+                // Load pending requisitions
+                const requisitionsSnapshot = await db.collection('requests')
+                    .where('type', '==', 'requisition')
+                    .where('status', '==', 'pending')
+                    .get();
+                document.getElementById('pendingRequisitions').textContent = requisitionsSnapshot.size;
+
+                // Load pending leaves
+                const leavesSnapshot = await db.collection('requests')
+                    .where('type', '==', 'leave')
+                    .where('status', '==', 'pending')
+                    .get();
+                document.getElementById('pendingLeaves').textContent = leavesSnapshot.size;
+
+                // Load pending off days
+                const offDaysSnapshot = await db.collection('requests')
+                    .where('type', '==', 'offday')
+                    .where('status', '==', 'pending')
+                    .get();
+                document.getElementById('pendingOffDays').textContent = offDaysSnapshot.size;
+
+                // Load total employees
+                const usersSnapshot = await db.collection('users').get();
+                document.getElementById('totalEmployees').textContent = usersSnapshot.size;
+
+                // Load recent requests
+                const recentRequests = await db.collection('requests')
+                    .orderBy('createdAt', 'desc')
+                    .limit(10)
+                    .get();
+
+                const tableBody = document.querySelector('#recentRequestsTable tbody');
+                tableBody.innerHTML = '';
+
+                recentRequests.forEach(doc => {
+                    const request = doc.data();
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${request.type?.charAt(0)?.toUpperCase() + request.type?.slice(1) || 'Unknown'}</td>
+                        <td>${request.requestorName || 'Unknown'}</td>
+                        <td>${formatDate(request.createdAt?.toDate())}</td>
+                        <td><span class="status status-${request.status}">${request.status}</span></td>
+                        <td>
+                            <button class="action-btn btn-view" onclick="viewRequest('${doc.id}')">View</button>
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+                
+                hideLoading();
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+                hideLoading();
+            }
+        }
+
+        async function loadMyRequests() {
+            if (!currentUser) return;
+            showLoading('Loading your requests...');
+
+            try {
+                const filter = document.getElementById('requestFilter').value;
+                let query = db.collection('requests')
+                    .where('requestorId', '==', currentUser.uid);
+
+                if (filter !== 'all') {
+                    query = query.where('type', '==', filter);
+                }
+
+                const snapshot = await query.orderBy('createdAt', 'desc').get();
+
+                const tableBody = document.querySelector('#myRequestsTable tbody');
+                tableBody.innerHTML = '';
+
+                snapshot.forEach(doc => {
+                    const request = doc.data();
+                    const approver = users.find(u => u.id === request.approverId);
+                    
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${request.type?.charAt(0)?.toUpperCase() + request.type?.slice(1) || 'Unknown'}</td>
+                        <td>${request.title || request.leaveType || 'Off Day'}</td>
+                        <td>${formatDate(request.createdAt?.toDate())}</td>
+                        <td><span class="status status-${request.status}">${request.status}</span></td>
+                        <td>${approver?.name || 'Unknown'}</td>
+                        <td>
+                            <button class="action-btn btn-view" onclick="viewRequest('${doc.id}')">View</button>
+                            ${request.status === 'approved' ? 
+                                `<button class="action-btn btn-download" onclick="downloadRequest('${doc.id}')">Download</button>` : 
+                                ''
+                            }
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+                
+                hideLoading();
+            } catch (error) {
+                console.error('Error loading my requests:', error);
+                hideLoading();
+            }
+        }
+
+        async function loadApprovals() {
+            if (!checkPermission('canApproveRequests')) return;
+            
+            showLoading('Loading approvals...');
+            await loadApprovalsTable();
+            await loadApprovedTable();
+            await loadRejectedTable();
+            hideLoading();
+        }
+
+        async function loadApprovalsTable() {
+            if (!currentUser) return;
+
+            try {
+                const snapshot = await db.collection('requests')
+                    .where('approverId', '==', currentUser.uid)
+                    .where('status', '==', 'pending')
+                    .orderBy('createdAt', 'desc')
+                    .get();
+
+                const tableBody = document.querySelector('#approvalsTable tbody');
+                tableBody.innerHTML = '';
+
+                snapshot.forEach(doc => {
+                    const request = doc.data();
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${request.type?.charAt(0)?.toUpperCase() + request.type?.slice(1) || 'Unknown'}</td>
+                        <td>${request.requestorName || 'Unknown'}</td>
+                        <td>${request.title || request.leaveType || 'Off Day'}</td>
+                        <td>${formatDate(request.createdAt?.toDate())}</td>
+                        <td>${request.priority || 'Medium'}</td>
+                        <td>
+                            <button class="action-btn btn-approve" onclick="approveRequest('${doc.id}')">Approve</button>
+                            <button class="action-btn btn-reject" onclick="rejectRequest('${doc.id}')">Reject</button>
+                            <button class="action-btn btn-view" onclick="viewRequest('${doc.id}')">View</button>
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Error loading approvals:', error);
+            }
+        }
+
+        async function loadApprovedTable() {
+            if (!currentUser) return;
+
+            try {
+                const snapshot = await db.collection('requests')
+                    .where('approverId', '==', currentUser.uid)
+                    .where('status', '==', 'approved')
+                    .orderBy('approvedAt', 'desc')
+                    .limit(50)
+                    .get();
+
+                const tableBody = document.querySelector('#approvedTable tbody');
+                tableBody.innerHTML = '';
+
+                snapshot.forEach(doc => {
+                    const request = doc.data();
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${request.type?.charAt(0)?.toUpperCase() + request.type?.slice(1) || 'Unknown'}</td>
+                        <td>${request.requestorName || 'Unknown'}</td>
+                        <td>${request.title || request.leaveType || 'Off Day'}</td>
+                        <td>${formatDate(request.createdAt?.toDate())}</td>
+                        <td>${formatDate(request.approvedAt?.toDate())}</td>
+                        <td>
+                            <button class="action-btn btn-view" onclick="viewRequest('${doc.id}')">View</button>
+                            <button class="action-btn btn-download" onclick="downloadRequest('${doc.id}')">Download</button>
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Error loading approved requests:', error);
+            }
+        }
+
+        async function loadRejectedTable() {
+            if (!currentUser) return;
+
+            try {
+                const snapshot = await db.collection('requests')
+                    .where('approverId', '==', currentUser.uid)
+                    .where('status', '==', 'rejected')
+                    .orderBy('rejectedAt', 'desc')
+                    .limit(50)
+                    .get();
+
+                const tableBody = document.querySelector('#rejectedTable tbody');
+                tableBody.innerHTML = '';
+
+                snapshot.forEach(doc => {
+                    const request = doc.data();
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${request.type?.charAt(0)?.toUpperCase() + request.type?.slice(1) || 'Unknown'}</td>
+                        <td>${request.requestorName || 'Unknown'}</td>
+                        <td>${request.title || request.leaveType || 'Off Day'}</td>
+                        <td>${formatDate(request.createdAt?.toDate())}</td>
+                        <td>${request.rejectionReason || 'No reason provided'}</td>
+                        <td>
+                            <button class="action-btn btn-view" onclick="viewRequest('${doc.id}')">View</button>
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Error loading rejected requests:', error);
+            }
+        }
+
+        // User Management Functions
+        async function loadUsersTable() {
+            if (!checkPermission('canManageUsers')) return;
+            showLoading('Loading users...');
+
+            try {
+                const snapshot = await db.collection('users').orderBy('name').get();
+
+                const tableBody = document.querySelector('#usersTable tbody');
+                tableBody.innerHTML = '';
+
+                snapshot.forEach(doc => {
+                    const user = doc.data();
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${user.name}</td>
+                        <td>${user.email}</td>
+                        <td><span class="badge badge-${user.role}">${user.role}</span></td>
+                        <td>${user.department}</td>
+                        <td>${user.position}</td>
+                        <td><span class="status status-${user.status || 'active'}">${user.status || 'active'}</span></td>
+                        <td>
+                            ${user.id !== currentUser.uid ? `
+                                <button class="action-btn btn-edit" onclick="editUser('${doc.id}')">Edit</button>
+                                <button class="action-btn btn-delete" onclick="deleteUser('${doc.id}')">Delete</button>
+                            ` : ''}
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+                
+                hideLoading();
+            } catch (error) {
+                console.error('Error loading users:', error);
+                hideLoading();
+            }
+        }
+
+        async function loadEmployees() {
+            if (!checkPermission('canManageEmployees')) return;
+            showLoading('Loading employees...');
+
+            try {
+                const snapshot = await db.collection('users').orderBy('name').get();
+
+                // Update counts
+                const activeEmployees = snapshot.docs.filter(doc => 
+                    doc.data().status === 'active').length;
+                const onLeaveEmployees = snapshot.docs.filter(doc => 
+                    doc.data().status === 'on-leave').length;
+                const departments = [...new Set(snapshot.docs.map(doc => 
+                    doc.data().department))].length;
+
+                document.getElementById('activeEmployees').textContent = activeEmployees;
+                document.getElementById('onLeaveEmployees').textContent = onLeaveEmployees;
+                document.getElementById('totalDepartments').textContent = departments;
+
+                // Update table
+                const tableBody = document.querySelector('#employeesTable tbody');
+                tableBody.innerHTML = '';
+
+                snapshot.forEach(doc => {
+                    const user = doc.data();
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${user.name}</td>
+                        <td>${user.email}</td>
+                        <td>${user.department}</td>
+                        <td>${user.position}</td>
+                        <td><span class="badge badge-${user.role}">${user.role}</span></td>
+                        <td><span class="status status-${user.status || 'active'}">${user.status || 'active'}</span></td>
+                        <td>
+                            <button class="action-btn btn-view" onclick="viewEmployee('${doc.id}')">View</button>
+                            ${checkPermission('canManageUsers') ? `
+                                <button class="action-btn btn-edit" onclick="editUser('${doc.id}')">Edit</button>
+                            ` : ''}
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+                
+                hideLoading();
+            } catch (error) {
+                console.error('Error loading employees:', error);
+                hideLoading();
+            }
+        }
+
+        function openUserModal(userId = null) {
+            const modal = document.getElementById('userModal');
+            const title = document.getElementById('userModalTitle');
+            const form = document.getElementById('userForm');
+
+            if (userId) {
+                title.textContent = 'Edit User';
+                // Load user data
+                const user = users.find(u => u.id === userId);
+                if (user) {
+                    document.getElementById('userNameInput').value = user.name;
+                    document.getElementById('userEmail').value = user.email;
+                    document.getElementById('userRoleSelect').value = user.role;
+                    document.getElementById('userDepartment').value = user.department;
+                    document.getElementById('userPosition').value = user.position;
+                    document.getElementById('userPhone').value = user.phone || '';
+                    document.getElementById('userAddress').value = user.address || '';
+                    document.getElementById('userJoinDate').value = user.joinDate ? 
+                        new Date(user.joinDate.seconds * 1000).toISOString().split('T')[0] : '';
+                    document.getElementById('userStatus').value = user.status || 'active';
+                    
+                    // Hide password fields for editing
+                    document.getElementById('userPassword').closest('.form-group').style.display = 'none';
+                    document.getElementById('userConfirmPassword').closest('.form-group').style.display = 'none';
+                    
+                    // Store user ID for update
+                    form.dataset.userId = userId;
+                }
+            } else {
+                title.textContent = 'Add New User';
+                form.reset();
+                // Show password fields for new user
+                document.getElementById('userPassword').closest('.form-group').style.display = 'block';
+                document.getElementById('userConfirmPassword').closest('.form-group').style.display = 'block';
+                delete form.dataset.userId;
+            }
+
+            modal.style.display = 'flex';
+        }
+
+        async function saveUser(e) {
+            e.preventDefault();
+            showLoading('Saving user...');
+
+            const form = document.getElementById('userForm');
+            const userId = form.dataset.userId;
+            const name = document.getElementById('userNameInput').value;
+            const email = document.getElementById('userEmail').value;
+            const password = document.getElementById('userPassword').value;
+            const confirmPassword = document.getElementById('userConfirmPassword').value;
+            const role = document.getElementById('userRoleSelect').value;
+            const department = document.getElementById('userDepartment').value;
+            const position = document.getElementById('userPosition').value;
+            const phone = document.getElementById('userPhone').value;
+            const address = document.getElementById('userAddress').value;
+            const joinDate = document.getElementById('userJoinDate').value;
+            const status = document.getElementById('userStatus').value;
+
+            // Validate
+            if (!name || !email || !role || !department || !position) {
+                hideLoading();
+                showAlert('Please fill all required fields', 'error');
+                return;
+            }
+
+            if (!userId && (!password || !confirmPassword)) {
+                hideLoading();
+                showAlert('Please enter password for new user', 'error');
+                return;
+            }
+
+            if (!userId && password !== confirmPassword) {
+                hideLoading();
+                showAlert('Passwords do not match', 'error');
+                return;
+            }
+
+            if (!userId && password.length < 6) {
+                hideLoading();
+                showAlert('Password must be at least 6 characters', 'error');
+                return;
+            }
+
+            try {
+                let userCredential;
+                
+                if (userId) {
+                    // Update existing user
+                    await db.collection('users').doc(userId).update({
+                        name,
+                        email,
+                        role,
+                        department,
+                        position,
+                        phone,
+                        address,
+                        joinDate: joinDate ? firebase.firestore.Timestamp.fromDate(new Date(joinDate)) : null,
+                        status,
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    
+                    hideLoading();
+                    showAlert('User updated successfully', 'success');
+                } else {
+                    // Create new user in Firebase Auth
+                    userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                    
+                    // Create user document
+                    await db.collection('users').doc(userCredential.user.uid).set({
+                        uid: userCredential.user.uid,
+                        name,
+                        email,
+                        role,
+                        department,
+                        position,
+                        phone,
+                        address,
+                        joinDate: joinDate ? firebase.firestore.Timestamp.fromDate(new Date(joinDate)) : 
+                            firebase.firestore.FieldValue.serverTimestamp(),
+                        status,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+
+                    // Update profile
+                    await userCredential.user.updateProfile({
+                        displayName: name
+                    });
+
+                    hideLoading();
+                    showAlert('User created successfully', 'success');
+                }
+
+                // Close modal and reload users
+                document.getElementById('userModal').style.display = 'none';
+                loadUsers();
+                loadUsersTable();
+                loadEmployees();
+                populateUserDropdowns();
+            } catch (error) {
+                hideLoading();
+                showAlert('Error: ' + error.message, 'error');
+            }
+        }
+
+        async function editUser(userId) {
+            openUserModal(userId);
+        }
+
+        async function deleteUser(userId) {
+            if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+                return;
+            }
+
+            showLoading('Deleting user...');
+            try {
+                await db.collection('users').doc(userId).delete();
+                hideLoading();
+                showAlert('User deleted successfully', 'success');
+                loadUsers();
+                loadUsersTable();
+                loadEmployees();
+                populateUserDropdowns();
+            } catch (error) {
+                hideLoading();
+                showAlert('Error: ' + error.message, 'error');
+            }
+        }
+
+        function viewEmployee(userId) {
+            const user = users.find(u => u.id === userId);
+            if (!user) return;
+
+            const modal = document.getElementById('requestModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalBody = document.getElementById('modalBody');
+
+            modalTitle.textContent = 'Employee Details';
+            modalBody.innerHTML = `
+                <div style="margin-bottom: 20px;">
+                    <p><strong>Name:</strong> ${user.name}</p>
+                    <p><strong>Email:</strong> ${user.email}</p>
+                    <p><strong>Role:</strong> <span class="badge badge-${user.role}">${user.role}</span></p>
+                    <p><strong>Department:</strong> ${user.department}</p>
+                    <p><strong>Position:</strong> ${user.position}</p>
+                    <p><strong>Status:</strong> <span class="status status-${user.status || 'active'}">${user.status || 'active'}</span></p>
+                    ${user.phone ? `<p><strong>Phone:</strong> ${user.phone}</p>` : ''}
+                    ${user.address ? `<p><strong>Address:</strong> ${user.address}</p>` : ''}
+                    ${user.joinDate ? `<p><strong>Join Date:</strong> ${formatDate(user.joinDate?.toDate())}</p>` : ''}
+                </div>
+            `;
+
+            modal.style.display = 'flex';
+        }
+
+        // Reports Functions
+        async function loadReports() {
+            if (!checkPermission('canViewReports')) return;
+            showLoading('Loading reports...');
+
+            try {
+                const period = document.getElementById('reportPeriod').value;
+                const now = new Date();
+                let startDate;
+
+                switch(period) {
+                    case 'month':
+                        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+                        break;
+                    case 'quarter':
+                        const quarter = Math.floor(now.getMonth() / 3);
+                        startDate = new Date(now.getFullYear(), quarter * 3, 1);
+                        break;
+                    case 'year':
+                        startDate = new Date(now.getFullYear(), 0, 1);
+                        break;
+                    default:
+                        startDate = null;
+                }
+
+                let query = db.collection('requests');
+                if (startDate) {
+                    query = query.where('createdAt', '>=', firebase.firestore.Timestamp.fromDate(startDate));
+                }
+
+                const snapshot = await query.get();
+
+                // Calculate statistics
+                const totalRequisitions = snapshot.docs.filter(doc => 
+                    doc.data().type === 'requisition').length;
+                const totalLeaveDays = snapshot.docs.filter(doc => 
+                    doc.data().type === 'leave')
+                    .reduce((sum, doc) => sum + (doc.data().days || 0), 0);
+                const approvedRequests = snapshot.docs.filter(doc => 
+                    doc.data().status === 'approved').length;
+                const totalRequests = snapshot.docs.length;
+                const approvalRate = totalRequests > 0 ? 
+                    Math.round((approvedRequests / totalRequests) * 100) : 0;
+
+                // Calculate average approval time
+                let totalApprovalTime = 0;
+                let approvedCount = 0;
+                snapshot.forEach(doc => {
+                    const request = doc.data();
+                    if (request.status === 'approved' && request.createdAt && request.approvedAt) {
+                        const createTime = request.createdAt.toDate();
+                        const approveTime = request.approvedAt.toDate();
+                        const timeDiff = approveTime.getTime() - createTime.getTime();
+                        totalApprovalTime += timeDiff;
+                        approvedCount++;
+                    }
+                });
+                
+                const avgApprovalTime = approvedCount > 0 ? 
+                    Math.round(totalApprovalTime / approvedCount / (1000 * 60 * 60)) : 0;
+
+                // Update UI
+                document.getElementById('totalRequisitions').textContent = totalRequisitions;
+                document.getElementById('totalLeaveDays').textContent = totalLeaveDays;
+                document.getElementById('approvalRate').textContent = `${approvalRate}%`;
+                document.getElementById('avgApprovalTime').textContent = `${avgApprovalTime}h`;
+
+                // Calculate department-wise statistics
+                const departmentStats = {};
+                snapshot.forEach(doc => {
+                    const request = doc.data();
+                    const dept = request.requestorDepartment || 'Unknown';
+                    
+                    if (!departmentStats[dept]) {
+                        departmentStats[dept] = {
+                            requisitions: 0,
+                            leaves: 0,
+                            offdays: 0,
+                            approved: 0,
+                            total: 0
+                        };
+                    }
+
+                    departmentStats[dept][request.type + 's']++;
+                    departmentStats[dept].total++;
+                    if (request.status === 'approved') {
+                        departmentStats[dept].approved++;
+                    }
+                });
+
+                // Update department table
+                const tableBody = document.querySelector('#departmentReportsTable tbody');
+                tableBody.innerHTML = '';
+
+                Object.entries(departmentStats).forEach(([dept, stats]) => {
+                    const deptApprovalRate = stats.total > 0 ? 
+                        Math.round((stats.approved / stats.total) * 100) : 0;
+                    
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${dept}</td>
+                        <td>${stats.requisitions}</td>
+                        <td>${stats.leaves}</td>
+                        <td>${stats.offdays}</td>
+                        <td>${deptApprovalRate}%</td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+
+                hideLoading();
+            } catch (error) {
+                console.error('Error loading reports:', error);
+                hideLoading();
+            }
+        }
+
+        // Action Functions
+        async function viewRequest(requestId) {
+            showLoading('Loading request details...');
+            try {
+                const doc = await db.collection('requests').doc(requestId).get();
+                if (!doc.exists) {
+                    hideLoading();
+                    showAlert('Request not found', 'error');
+                    return;
+                }
+
+                const request = doc.data();
+                const modal = document.getElementById('requestModal');
+                const modalTitle = document.getElementById('modalTitle');
+                const modalBody = document.getElementById('modalBody');
+
+                modalTitle.textContent = `${request.type?.charAt(0)?.toUpperCase() + request.type?.slice(1) || 'Unknown'} Details`;
+                
+                let html = `
+                    <div style="margin-bottom: 20px;">
+                        <p><strong>Requestor:</strong> ${request.requestorName || 'Unknown'}</p>
+                        <p><strong>Department:</strong> ${request.requestorDepartment || 'Not specified'}</p>
+                        <p><strong>Date Submitted:</strong> ${formatDate(request.createdAt?.toDate())}</p>
+                        <p><strong>Status:</strong> <span class="status status-${request.status}">${request.status}</span></p>
+                `;
+
+                if (request.type === 'requisition') {
+                    html += `
+                        <p><strong>Title:</strong> ${request.title}</p>
+                        <p><strong>Type:</strong> ${request.requisitionType}</p>
+                        <p><strong>Currency:</strong> ${request.currency || 'KES'}</p>
+                        <p><strong>Amount:</strong> ${request.currency || 'KES'} ${request.amount?.toLocaleString() || '0'}</p>
+                    `;
+                    
+                    // Display items if available
+                    if (request.items && request.items.length > 0) {
+                        html += `
+                            <p><strong>Items:</strong></p>
+                            <table style="width: 100%; margin: 10px 0; border-collapse: collapse;">
+                                <thead>
+                                    <tr style="background-color: #f8f9fa;">
+                                        <th style="padding: 8px; text-align: left;">Description</th>
+                                        <th style="padding: 8px; text-align: right;">Qty</th>
+                                        <th style="padding: 8px; text-align: right;">Unit Price</th>
+                                        <th style="padding: 8px; text-align: right;">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                        `;
+                        
+                        request.items.forEach(item => {
+                            html += `
+                                <tr>
+                                    <td style="padding: 8px;">${item.description}</td>
+                                    <td style="padding: 8px; text-align: right;">${item.quantity}</td>
+                                    <td style="padding: 8px; text-align: right;">${request.currency || 'KES'} ${item.price.toFixed(2)}</td>
+                                    <td style="padding: 8px; text-align: right;">${request.currency || 'KES'} ${item.total.toFixed(2)}</td>
+                                </tr>
+                            `;
+                        });
+                        
+                        html += `
+                                </tbody>
+                            </table>
+                        `;
+                    }
+                    
+                    html += `
+                        <p><strong>Description:</strong> ${request.description}</p>
+                        <p><strong>Priority:</strong> ${request.priority}</p>
+                        ${request.expectedDate ? `<p><strong>Expected Date:</strong> ${request.expectedDate}</p>` : ''}
+                    `;
+                } else if (request.type === 'leave') {
+                    html += `
+                        <p><strong>Leave Type:</strong> ${request.leaveType}</p>
+                        <p><strong>Duration:</strong> ${request.days} days</p>
+                        <p><strong>Start Date:</strong> ${request.startDate}</p>
+                        <p><strong>End Date:</strong> ${request.endDate}</p>
+                        <p><strong>Reason:</strong> ${request.reason}</p>
+                    `;
+                } else if (request.type === 'offday') {
+                    html += `
+                        <p><strong>Date:</strong> ${request.date}</p>
+                        <p><strong>Reason:</strong> ${request.reason}</p>
+                        ${request.description ? `<p><strong>Details:</strong> ${request.description}</p>` : ''}
+                    `;
+                }
+
+                // Show approval buttons if current user is the approver and request is pending
+                if (currentUser.uid === request.approverId && request.status === 'pending' && 
+                    checkPermission('canApproveRequests')) {
+                    html += `
+                        <div style="margin-top: 20px; display: flex; gap: 10px;">
+                            <button class="btn btn-approve" onclick="approveRequest('${requestId}')">Approve</button>
+                            <button class="btn btn-reject" onclick="rejectRequest('${requestId}')">Reject</button>
+                        </div>
+                    `;
+                }
+
+                // Show download button if approved
+                if (request.status === 'approved') {
+                    html += `
+                        <div style="margin-top: 20px;">
+                            <button class="btn btn-download" onclick="downloadRequest('${requestId}')">Download as PDF</button>
+                        </div>
+                    `;
+                }
+
+                modalBody.innerHTML = html;
+                modal.style.display = 'flex';
+                hideLoading();
+            } catch (error) {
+                console.error('Error viewing request:', error);
+                hideLoading();
+                showAlert('Error loading request details', 'error');
+            }
+        }
+
+        async function approveRequest(requestId) {
+            if (!checkPermission('canApproveRequests')) {
+                showAlert('You do not have permission to approve requests', 'error');
+                return;
+            }
+
+            if (!confirm('Are you sure you want to approve this request?')) return;
+
+            showLoading('Approving request...');
+            try {
+                const updateData = {
+                    status: 'approved',
+                    approvedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    approvedBy: currentUser.uid
+                };
+                
+                // Only add approvedByName if currentUserData.name exists
+                if (currentUserData?.name) {
+                    updateData.approvedByName = currentUserData.name;
+                }
+
+                await db.collection('requests').doc(requestId).update(updateData);
+
+                // Get the request to notify the requestor
+                const requestDoc = await db.collection('requests').doc(requestId).get();
+                const request = requestDoc.data();
+
+                // Create notification for requestor
+                await createNotification(
+                    request.requestorId,
+                    'Request Approved',
+                    `Your ${request.type} request has been approved by ${currentUserData?.name || 'an approver'}`,
+                    request.type,
+                    requestId
+                );
+
+                // Reload data
+                loadDashboardData();
+                loadMyRequests();
+                loadApprovals();
+                loadNotifications();
+                loadReports();
+
+                // Close modal
+                document.getElementById('requestModal').style.display = 'none';
+
+                hideLoading();
+                showAlert('Request approved successfully!', 'success');
+            } catch (error) {
+                console.error('Error approving request:', error);
+                hideLoading();
+                showAlert('Error approving request: ' + error.message, 'error');
+            }
+        }
+
+        async function rejectRequest(requestId) {
+            if (!checkPermission('canApproveRequests')) {
+                showAlert('You do not have permission to reject requests', 'error');
+                return;
+            }
+
+            const reason = prompt('Please enter a reason for rejection:');
+            if (!reason) return;
+
+            showLoading('Rejecting request...');
+            try {
+                const updateData = {
+                    status: 'rejected',
+                    rejectedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    rejectedBy: currentUser.uid,
+                    rejectionReason: reason
+                };
+                
+                // Only add rejectedByName if currentUserData.name exists
+                if (currentUserData?.name) {
+                    updateData.rejectedByName = currentUserData.name;
+                }
+
+                await db.collection('requests').doc(requestId).update(updateData);
+
+                // Get the request to notify the requestor
+                const requestDoc = await db.collection('requests').doc(requestId).get();
+                const request = requestDoc.data();
+
+                // Create notification for requestor
+                await createNotification(
+                    request.requestorId,
+                    'Request Rejected',
+                    `Your ${request.type} request has been rejected by ${currentUserData?.name || 'an approver'}. Reason: ${reason}`,
+                    request.type,
+                    requestId
+                );
+
+                // Reload data
+                loadDashboardData();
+                loadMyRequests();
+                loadApprovals();
+                loadNotifications();
+                loadReports();
+
+                // Close modal
+                document.getElementById('requestModal').style.display = 'none';
+
+                hideLoading();
+                showAlert('Request rejected successfully!', 'success');
+            } catch (error) {
+                console.error('Error rejecting request:', error);
+                hideLoading();
+                showAlert('Error rejecting request: ' + error.message, 'error');
+            }
+        }
+
+        async function downloadRequest(requestId) {
+            showLoading('Generating PDF...');
+            try {
+                const doc = await db.collection('requests').doc(requestId).get();
+                if (!doc.exists) {
+                    hideLoading();
+                    showAlert('Request not found', 'error');
+                    return;
+                }
+
+                const request = doc.data();
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF();
+                
+                // Add logo and title
+                pdf.setFontSize(20);
+                pdf.setTextColor(50, 205, 50); // Lime green
+                pdf.text('Cars Kenya HR System', 105, 20, null, null, 'center');
+                
+                pdf.setFontSize(16);
+                pdf.setTextColor(0, 0, 0);
+                pdf.text(`${request.type?.charAt(0)?.toUpperCase() + request.type?.slice(1) || 'Unknown'} Request`, 105, 30, null, null, 'center');
+                
+                // Add request details
+                pdf.setFontSize(12);
+                let y = 50;
+                
+                pdf.text(`Request ID: ${requestId}`, 20, y);
+                y += 10;
+                pdf.text(`Requestor: ${request.requestorName || 'Unknown'}`, 20, y);
+                y += 10;
+                pdf.text(`Department: ${request.requestorDepartment || 'Not specified'}`, 20, y);
+                y += 10;
+                pdf.text(`Date Submitted: ${formatDate(request.createdAt?.toDate())}`, 20, y);
+                y += 10;
+                pdf.text(`Status: ${request.status}`, 20, y);
+                y += 10;
+                
+                if (request.type === 'requisition') {
+                    pdf.text(`Title: ${request.title}`, 20, y);
+                    y += 10;
+                    pdf.text(`Type: ${request.requisitionType}`, 20, y);
+                    y += 10;
+                    pdf.text(`Currency: ${request.currency || 'KES'}`, 20, y);
+                    y += 10;
+                    pdf.text(`Amount: ${request.currency || 'KES'} ${request.amount?.toLocaleString() || '0'}`, 20, y);
+                    y += 10;
+                    
+                    // Add items table
+                    if (request.items && request.items.length > 0) {
+                        y += 10;
+                        pdf.text('Items:', 20, y);
+                        y += 10;
+                        
+                        // Table headers
+                        pdf.text('Description', 20, y);
+                        pdf.text('Qty', 100, y);
+                        pdf.text('Unit Price', 130, y);
+                        pdf.text('Total', 170, y);
+                        y += 10;
+                        
+                        // Draw line
+                        pdf.line(20, y, 190, y);
+                        y += 5;
+                        
+                        // Table rows
+                        request.items.forEach(item => {
+                            pdf.text(item.description.substring(0, 30), 20, y);
+                            pdf.text(item.quantity.toString(), 100, y);
+                            pdf.text(`${request.currency || 'KES'} ${item.price.toFixed(2)}`, 130, y);
+                            pdf.text(`${request.currency || 'KES'} ${item.total.toFixed(2)}`, 170, y);
+                            y += 10;
+                            
+                            // Check if we need a new page
+                            if (y > 250) {
+                                pdf.addPage();
+                                y = 20;
+                            }
+                        });
+                        
+                        y += 5;
+                        pdf.line(20, y, 190, y);
+                        y += 10;
+                    }
+                    
+                    pdf.text(`Description: ${request.description}`, 20, y);
+                    y += 10;
+                    pdf.text(`Priority: ${request.priority}`, 20, y);
+                    y += 10;
+                    if (request.expectedDate) {
+                        pdf.text(`Expected Date: ${request.expectedDate}`, 20, y);
+                        y += 10;
+                    }
+                } else if (request.type === 'leave') {
+                    pdf.text(`Leave Type: ${request.leaveType}`, 20, y);
+                    y += 10;
+                    pdf.text(`Duration: ${request.days} days`, 20, y);
+                    y += 10;
+                    pdf.text(`Start Date: ${request.startDate}`, 20, y);
+                    y += 10;
+                    pdf.text(`End Date: ${request.endDate}`, 20, y);
+                    y += 10;
+                    pdf.text(`Reason: ${request.reason}`, 20, y);
+                    y += 10;
+                } else if (request.type === 'offday') {
+                    pdf.text(`Date: ${request.date}`, 20, y);
+                    y += 10;
+                    pdf.text(`Reason: ${request.reason}`, 20, y);
+                    y += 10;
+                    if (request.description) {
+                        pdf.text(`Details: ${request.description}`, 20, y);
+                        y += 10;
+                    }
+                }
+                
+                // Add approval details if approved
+                if (request.status === 'approved' && request.approvedByName) {
+                    y += 10;
+                    pdf.setFontSize(14);
+                    pdf.text('Approval Details', 20, y);
+                    pdf.setFontSize(12);
+                    y += 10;
+                    pdf.text(`Approved By: ${request.approvedByName}`, 20, y);
+                    y += 10;
+                    pdf.text(`Approved At: ${formatDate(request.approvedAt?.toDate())}`, 20, y);
+                    y += 10;
+                }
+                
+                // Add rejection details if rejected
+                if (request.status === 'rejected' && request.rejectedByName) {
+                    y += 10;
+                    pdf.setFontSize(14);
+                    pdf.text('Rejection Details', 20, y);
+                    pdf.setFontSize(12);
+                    y += 10;
+                    pdf.text(`Rejected By: ${request.rejectedByName}`, 20, y);
+                    y += 10;
+                    pdf.text(`Rejected At: ${formatDate(request.rejectedAt?.toDate())}`, 20, y);
+                    y += 10;
+                    pdf.text(`Reason: ${request.rejectionReason}`, 20, y);
+                    y += 10;
+                }
+                
+                // Add footer
+                pdf.setFontSize(10);
+                pdf.text('© Cars Kenya HR System - Generated on ' + new Date().toLocaleDateString(), 105, 280, null, null, 'center');
+                
+                // Save the PDF
+                pdf.save(`${request.type}_request_${requestId}.pdf`);
+                hideLoading();
+            } catch (error) {
+                console.error('Error downloading PDF:', error);
+                hideLoading();
+                showAlert('Error generating PDF', 'error');
+            }
+        }
+
+        function viewNotification(notification) {
+            const modal = document.getElementById('notificationModal');
+            const modalBody = document.getElementById('notificationModalBody');
+            
+            modalBody.innerHTML = `
+                <h3>${notification.title}</h3>
+                <p>${notification.message}</p>
+                <p><strong>Date:</strong> ${formatDate(notification.timestamp?.toDate())}</p>
+                <p><strong>Type:</strong> ${notification.type}</p>
+                ${notification.requestId ? 
+                    `<button class="btn" onclick="viewRequest('${notification.requestId}')">View Request</button>` : 
+                    ''
+                }
+            `;
+            
+            modal.style.display = 'flex';
+            
+            // Mark as read
+            if (!notification.read) {
+                db.collection('notifications').doc(notification.id).update({ read: true });
+                loadNotifications();
+            }
+        }
+
+        // Utility Functions
+        function formatDate(date) {
+            if (!date) return 'N/A';
+            return date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        // Make functions available globally for onclick events
+        window.viewRequest = viewRequest;
+        window.approveRequest = approveRequest;
+        window.rejectRequest = rejectRequest;
+        window.downloadRequest = downloadRequest;
+        window.viewNotification = viewNotification;
+        window.editUser = editUser;
+        window.deleteUser = deleteUser;
+        window.viewEmployee = viewEmployee;
+        window.viewJobDescription = viewJobDescription;
+        window.addEventToCalendar = addEventToCalendar;
+        
+        // NEW FEATURES: Enhanced Requisition Functions
+        window.updateRequisitionItem = updateRequisitionItem;
+        window.removeRequisitionItem = removeRequisitionItem;
+    </script>
+</body>
+</html>
