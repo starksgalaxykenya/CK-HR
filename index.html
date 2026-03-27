@@ -2167,138 +2167,195 @@
         }
 
         // Initialize the app
-        document.addEventListener('DOMContentLoaded', () => {
-            // Set current date
-            document.getElementById('currentDate').textContent = new Date().toLocaleDateString('en-US', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-            });
-
-            // Event Listeners
-            loginBtn.addEventListener('click', handleLogin);
-            registerBtn.addEventListener('click', handleRegister);
-            logoutBtn.addEventListener('click', handleLogout);
-            showRegisterLink.addEventListener('click', () => toggleAuthForms('register'));
-            showLoginLink.addEventListener('click', () => toggleAuthForms('login'));
-            notificationBell.addEventListener('click', toggleNotifications);
-            document.getElementById('addUserBtn')?.addEventListener('click', () => openUserModal());
-
-            // Menu navigation
-            document.querySelectorAll('.menu-item').forEach(item => {
-                item.addEventListener('click', () => {
-                    const page = item.getAttribute('data-page');
-                    navigateToPage(page);
-                });
-            });
-
-            // Tab navigation
-            document.querySelectorAll('.tab').forEach(tab => {
-                tab.addEventListener('click', () => {
-                    const tabName = tab.getAttribute('data-tab');
-                    switchTab(tabName);
-                });
-            });
-
-            // Close modals
-            document.getElementById('closeModal').addEventListener('click', () => {
-                document.getElementById('requestModal').style.display = 'none';
-            });
-
-            document.getElementById('closeUserModal').addEventListener('click', () => {
-                document.getElementById('userModal').style.display = 'none';
-            });
-
-            document.getElementById('closeNotificationModal').addEventListener('click', () => {
-                document.getElementById('notificationModal').style.display = 'none';
-            });
-
-            document.getElementById('closeJobModal').addEventListener('click', () => {
-                document.getElementById('jobDescriptionModal').style.display = 'none';
-            });
-
-            document.getElementById('closeEditJobModal').addEventListener('click', () => {
-                document.getElementById('editJobDescriptionModal').style.display = 'none';
-            });
-
-            document.getElementById('closeEventModal').addEventListener('click', () => {
-                document.getElementById('calendarEventModal').style.display = 'none';
-            });
-
-            // Form submissions
-            document.getElementById('requisitionForm')?.addEventListener('submit', submitRequisition);
-            document.getElementById('leaveForm')?.addEventListener('submit', submitLeave);
-            document.getElementById('offdayForm')?.addEventListener('submit', submitOffDay);
-            document.getElementById('userForm')?.addEventListener('submit', saveUser);
-            editJobForm?.addEventListener('submit', saveJobDescription);
-
-            // UPDATED: Job Description Event Listeners
-            addJobDescriptionBtn?.addEventListener('click', () => openEditJobDescriptionModal());
-            cancelEditJobBtn?.addEventListener('click', () => {
-                document.getElementById('editJobDescriptionModal').style.display = 'none';
-            });
-
-            // Filter changes
-            document.getElementById('requestFilter')?.addEventListener('change', loadMyRequests);
-            document.getElementById('reportPeriod')?.addEventListener('change', loadReports);
-            document.getElementById('departmentFilter')?.addEventListener('change', loadOrgChart);
-
-            // NEW FEATURES: Enhanced Requisition Form Event Listeners
-            if (addItemBtn) {
-                addItemBtn.addEventListener('click', addRequisitionItem);
-                initializeRequisitionItems();
-            }
-
-            // Currency selector
-            currencyButtons.forEach(btn => {
-                btn.addEventListener('click', () => {
-                    currencyButtons.forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-                    selectedCurrency = btn.getAttribute('data-currency');
-                    selectedCurrencyInput.value = selectedCurrency;
-                    currencySymbolElement.textContent = selectedCurrency;
-                    calculateTotal();
-                });
-            });
-
-            // NEW FEATURES: Calendar Event Listeners
-            if (prevMonthBtn) prevMonthBtn.addEventListener('click', previousMonth);
-            if (nextMonthBtn) nextMonthBtn.addEventListener('click', nextMonth);
-            if (todayBtn) todayBtn.addEventListener('click', goToToday);
-
-            // Check auth state
-            auth.onAuthStateChanged(async (user) => {
-                if (user) {
-                    currentUser = user;
-                    await loadCurrentUserData();
-                    showAppInterface();
-                    await loadUsers();
-                    loadNotifications();
-                    await loadJobDescriptionsData(); // Load job descriptions data
-                } else {
-                    showLoginInterface();
-                }
-            });
-
-            // Set today's date for date inputs
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('offdayDate')?.setAttribute('min', today);
-            document.getElementById('leaveStart')?.setAttribute('min', today);
-            document.getElementById('leaveEnd')?.setAttribute('min', today);
-            document.getElementById('expectedDate')?.setAttribute('min', today);
-            document.getElementById('userJoinDate')?.setAttribute('max', today);
-            
-            // Try to auto-login with demo credentials on page load
-            setTimeout(() => {
-                if (!auth.currentUser) {
-                    // Pre-fill demo credentials
-                    emailInput.value = 'admin@carskenya.com';
-                    passwordInput.value = 'password123';
-                }
-            }, 1000);
+       document.addEventListener('DOMContentLoaded', () => {
+    // Set current date
+    const currentDateElement = document.getElementById('currentDate');
+    if (currentDateElement) {
+        currentDateElement.textContent = new Date().toLocaleDateString('en-US', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
         });
+    }
 
+    // Event Listeners with null checks
+    if (loginBtn) loginBtn.addEventListener('click', handleLogin);
+    if (registerBtn) registerBtn.addEventListener('click', handleRegister);
+    if (logoutBtn) logoutBtn.addEventListener('click', handleLogout);
+    if (showRegisterLink) showRegisterLink.addEventListener('click', () => toggleAuthForms('register'));
+    if (showLoginLink) showLoginLink.addEventListener('click', () => toggleAuthForms('login'));
+    if (notificationBell) notificationBell.addEventListener('click', toggleNotifications);
+    
+    const addUserBtn = document.getElementById('addUserBtn');
+    if (addUserBtn) addUserBtn.addEventListener('click', () => openUserModal());
+
+    // Menu navigation with null checks
+    document.querySelectorAll('.menu-item').forEach(item => {
+        item.addEventListener('click', () => {
+            const page = item.getAttribute('data-page');
+            if (page) navigateToPage(page);
+        });
+    });
+
+    // Tab navigation
+    const tabs = document.querySelectorAll('.tab');
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            const tabName = tab.getAttribute('data-tab');
+            if (tabName) switchTab(tabName);
+        });
+    });
+
+    // Close modals with null checks
+    const closeModal = document.getElementById('closeModal');
+    if (closeModal) closeModal.addEventListener('click', () => {
+        const modal = document.getElementById('requestModal');
+        if (modal) modal.style.display = 'none';
+    });
+
+    const closeUserModal = document.getElementById('closeUserModal');
+    if (closeUserModal) closeUserModal.addEventListener('click', () => {
+        const modal = document.getElementById('userModal');
+        if (modal) modal.style.display = 'none';
+    });
+
+    const closeNotificationModal = document.getElementById('closeNotificationModal');
+    if (closeNotificationModal) closeNotificationModal.addEventListener('click', () => {
+        const modal = document.getElementById('notificationModal');
+        if (modal) modal.style.display = 'none';
+    });
+
+    const closeJobModal = document.getElementById('closeJobModal');
+    if (closeJobModal) closeJobModal.addEventListener('click', () => {
+        const modal = document.getElementById('jobDescriptionModal');
+        if (modal) modal.style.display = 'none';
+    });
+
+    const closeEditJobModal = document.getElementById('closeEditJobModal');
+    if (closeEditJobModal) closeEditJobModal.addEventListener('click', () => {
+        const modal = document.getElementById('editJobDescriptionModal');
+        if (modal) modal.style.display = 'none';
+    });
+
+    const closeEventModal = document.getElementById('closeEventModal');
+    if (closeEventModal) closeEventModal.addEventListener('click', () => {
+        const modal = document.getElementById('calendarEventModal');
+        if (modal) modal.style.display = 'none';
+    });
+
+    // Form submissions with null checks
+    const requisitionForm = document.getElementById('requisitionForm');
+    if (requisitionForm) requisitionForm.addEventListener('submit', submitRequisition);
+    
+    const leaveForm = document.getElementById('leaveForm');
+    if (leaveForm) leaveForm.addEventListener('submit', submitLeave);
+    
+    const offdayForm = document.getElementById('offdayForm');
+    if (offdayForm) offdayForm.addEventListener('submit', submitOffDay);
+    
+    const userForm = document.getElementById('userForm');
+    if (userForm) userForm.addEventListener('submit', saveUser);
+    
+    if (editJobForm) editJobForm.addEventListener('submit', saveJobDescription);
+
+    // UPDATED: Job Description Event Listeners
+    if (addJobDescriptionBtn) addJobDescriptionBtn.addEventListener('click', () => openEditJobDescriptionModal());
+    if (cancelEditJobBtn) cancelEditJobBtn.addEventListener('click', () => {
+        const modal = document.getElementById('editJobDescriptionModal');
+        if (modal) modal.style.display = 'none';
+    });
+
+    // Filter changes
+    const requestFilter = document.getElementById('requestFilter');
+    if (requestFilter) requestFilter.addEventListener('change', loadMyRequests);
+    
+    const reportPeriod = document.getElementById('reportPeriod');
+    if (reportPeriod) reportPeriod.addEventListener('change', loadReports);
+    
+    const departmentFilter = document.getElementById('departmentFilter');
+    if (departmentFilter) departmentFilter.addEventListener('change', loadOrgChart);
+
+    // NEW FEATURES: Enhanced Requisition Form Event Listeners
+    if (addItemBtn) {
+        addItemBtn.addEventListener('click', addRequisitionItem);
+        initializeRequisitionItems();
+    }
+
+    // Currency selector
+    if (currencyButtons.length > 0) {
+        currencyButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                currencyButtons.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                selectedCurrency = btn.getAttribute('data-currency');
+                if (selectedCurrencyInput) selectedCurrencyInput.value = selectedCurrency;
+                if (currencySymbolElement) currencySymbolElement.textContent = selectedCurrency;
+                calculateTotal();
+            });
+        });
+    }
+
+    // NEW FEATURES: Calendar Event Listeners
+    if (prevMonthBtn) prevMonthBtn.addEventListener('click', previousMonth);
+    if (nextMonthBtn) nextMonthBtn.addEventListener('click', nextMonth);
+    if (todayBtn) todayBtn.addEventListener('click', goToToday);
+
+    // Check auth state
+    auth.onAuthStateChanged(async (user) => {
+        if (user) {
+            currentUser = user;
+            await loadCurrentUserData();
+            showAppInterface();
+            await loadUsers();
+            loadNotifications();
+            await loadJobDescriptionsData();
+        } else {
+            showLoginInterface();
+        }
+    });
+
+    // Set today's date for date inputs
+    const offdayDate = document.getElementById('offdayDate');
+    if (offdayDate) {
+        const today = new Date().toISOString().split('T')[0];
+        offdayDate.setAttribute('min', today);
+    }
+    
+    const leaveStart = document.getElementById('leaveStart');
+    if (leaveStart) {
+        const today = new Date().toISOString().split('T')[0];
+        leaveStart.setAttribute('min', today);
+    }
+    
+    const leaveEnd = document.getElementById('leaveEnd');
+    if (leaveEnd) {
+        const today = new Date().toISOString().split('T')[0];
+        leaveEnd.setAttribute('min', today);
+    }
+    
+    const expectedDate = document.getElementById('expectedDate');
+    if (expectedDate) {
+        const today = new Date().toISOString().split('T')[0];
+        expectedDate.setAttribute('min', today);
+    }
+    
+    const userJoinDate = document.getElementById('userJoinDate');
+    if (userJoinDate) {
+        const today = new Date().toISOString().split('T')[0];
+        userJoinDate.setAttribute('max', today);
+    }
+    
+    // Try to auto-login with demo credentials on page load
+    setTimeout(() => {
+        if (!auth.currentUser) {
+            if (emailInput && passwordInput) {
+                emailInput.value = 'admin@carskenya.com';
+                passwordInput.value = 'password123';
+            }
+        }
+    }, 1000);
+});
         // Authentication Functions
         async function handleLogin() {
             showLoading('Logging in...');
@@ -2462,19 +2519,18 @@
             }, 5000);
         }
 
-        function showLoginInterface() {
-            loginPage.style.display = 'flex';
-            appContainer.style.display = 'none';
-            toggleAuthForms('login');
-        }
-
-        async function showAppInterface() {
-            loginPage.style.display = 'none';
-            appContainer.style.display = 'block';
-            updateUserProfile();
-            updateMenuBasedOnRole();
-            navigateToPage('dashboard');
-        }
+       function showLoginInterface() {
+    if (loginPage) loginPage.style.display = 'flex';
+    if (appContainer) appContainer.style.display = 'none';
+    toggleAuthForms('login');
+}
+       async function showAppInterface() {
+    if (loginPage) loginPage.style.display = 'none';
+    if (appContainer) appContainer.style.display = 'block';
+    updateUserProfile();
+    updateMenuBasedOnRole();
+    navigateToPage('dashboard');
+}
 
         async function loadCurrentUserData() {
             if (!currentUser) return;
