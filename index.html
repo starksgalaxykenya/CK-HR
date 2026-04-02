@@ -4171,9 +4171,15 @@
                         new Date(user.joinDate.seconds * 1000).toISOString().split('T')[0] : '';
                     document.getElementById('userStatus').value = user.status || 'active';
                     
-                    // Hide password fields for editing
-                    document.getElementById('userPassword').closest('.form-group').style.display = 'none';
-                    document.getElementById('userConfirmPassword').closest('.form-group').style.display = 'none';
+                    // Hide password fields for editing and remove required to prevent validation errors
+                    const pwdField = document.getElementById('userPassword');
+                    const confirmPwdField = document.getElementById('userConfirmPassword');
+                    pwdField.closest('.form-group').style.display = 'none';
+                    confirmPwdField.closest('.form-group').style.display = 'none';
+                    pwdField.removeAttribute('required');
+                    confirmPwdField.removeAttribute('required');
+                    pwdField.value = '';
+                    confirmPwdField.value = '';
                     
                     // Store user ID for update
                     form.dataset.userId = userId;
@@ -4181,9 +4187,13 @@
             } else {
                 title.textContent = 'Add New User';
                 form.reset();
-                // Show password fields for new user
-                document.getElementById('userPassword').closest('.form-group').style.display = 'block';
-                document.getElementById('userConfirmPassword').closest('.form-group').style.display = 'block';
+                // Show password fields for new user and restore required attribute
+                const pwdFieldNew = document.getElementById('userPassword');
+                const confirmPwdFieldNew = document.getElementById('userConfirmPassword');
+                pwdFieldNew.closest('.form-group').style.display = 'block';
+                confirmPwdFieldNew.closest('.form-group').style.display = 'block';
+                pwdFieldNew.setAttribute('required', 'required');
+                confirmPwdFieldNew.setAttribute('required', 'required');
                 delete form.dataset.userId;
             }
 
