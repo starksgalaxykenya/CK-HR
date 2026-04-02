@@ -1205,6 +1205,7 @@
                                 <th>Requestor</th>
                                 <th>Date</th>
                                 <th>Status</th>
+                                <th>Actioned By</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -3843,63 +3844,83 @@
         }
 
         async function loadDashboardData() {
-            showLoading('Loading dashboard data...');
-            try {
-                // Load pending requisitions
-                const requisitionsSnapshot = await db.collection('requests')
-                    .where('type', '==', 'requisition')
-                    .where('status', '==', 'pending')
-                    .get();
-                document.getElementById('pendingRequisitions').textContent = requisitionsSnapshot.size;
+    showLoading('Loading dashboard data...');
+    const isPrivileged = currentUserData?.role === ROLES.ADMIN || currentUserData?.role === ROLES.MANAGER || currentUserData?.role === ROLES.HR;
 
-                // Load pending leaves
-                const leavesSnapshot = await db.collection('requests')
-                    .where('type', '==', 'leave')
-                    .where('status', '==', 'pending')
-                    .get();
-                document.getElementById('pendingLeaves').textContent = leavesSnapshot.size;
+    try {
+        let baseQuery;
 
-                // Load pending off days
-                const offDaysSnapshot = await db.collection('requests')
-                    .where('type', '==', 'offday')
-                    .where('status', '==', 'pending')
-                    .get();
-                document.getElementById('pendingOffDays').textContent = offDaysSnapshot.size;
-
-                // Load total employees
-                const usersSnapshot = await db.collection('users').get();
-                document.getElementById('totalEmployees').textContent = usersSnapshot.size;
-
-                // Load recent requests
-                const recentRequests = await db.collection('requests')
-                    .orderBy('createdAt', 'desc')
-                    .limit(10)
-                    .get();
-
-                const tableBody = document.querySelector('#recentRequestsTable tbody');
-                tableBody.innerHTML = '';
-
-                recentRequests.forEach(doc => {
-                    const request = doc.data();
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>${request.type?.charAt(0)?.toUpperCase() + request.type?.slice(1) || 'Unknown'}</td>
-                        <td>${request.requestorName || 'Unknown'}</td>
-                        <td>${formatDate(request.createdAt?.toDate())}</td>
-                        <td><span class="status status-${request.status}">${request.status}</span></td>
-                        <td>
-                            <button class="action-btn btn-view" onclick="viewRequest('${doc.id}')">View</button>
-                        </td>
-                    `;
-                    tableBody.appendChild(row);
-                });
-                
-                hideLoading();
-            } catch (error) {
-                console.error('Error loading dashboard data:', error);
-                hideLoading();
-            }
+        if (isPrivileged) {
+            // Managers/Admins/HR see all requests
+            baseQuery = db.collection('requests');
+        } else {
+            // Regular employees only see their own requests
+            baseQuery = db.collection('requests').where('requestorId', '==', currentUser.uid);
         }
+
+        const requisitionsSnapshot = await baseQuery
+            .where('type', '==', 'requisition')
+            .where('status', '==', 'pending')
+            .get();
+        document.getElementById('pendingRequisitions').textContent = requisitionsSnapshot.size;
+
+        const leavesSnapshot = await baseQuery
+            .where('type', '==', 'leave')
+            .where('status', '==', 'pending')
+            .get();
+        document.getElementById('pendingLeaves').textContent = leavesSnapshot.size;
+
+        const offDaysSnapshot = await baseQuery
+            .where('type', '==', 'offday')
+            .where('status', '==', 'pending')
+            .get();
+        document.getElementById('pendingOffDays').textContent = offDaysSnapshot.size;
+
+        const usersSnapshot = await db.collection('users').get();
+        document.getElementById('totalEmployees').textContent = usersSnapshot.size;
+
+        // Recent requests — scoped by role
+        let recentQuery = isPrivileged
+            ? db.collection('requests').orderBy('createdAt', 'desc').limit(10)
+            : db.collection('requests').where('requestorId', '==', currentUser.uid).orderBy('createdAt', 'desc').limit(10);
+
+        const recentRequests = await recentQuery.get();
+
+        const tableBody = document.querySelector('#recentRequestsTable tbody');
+        tableBody.innerHTML = '';
+
+        recentRequests.forEach(doc => {
+            const request = doc.data();
+            // Build audit trail cell
+            let auditHtml = '';
+            if (request.status === 'approved' && request.approvedByName) {
+                auditHtml = `<span style="color:#155724;">✔ Approved by ${request.approvedByName}<br><small>${formatDate(request.approvedAt?.toDate())}</small></span>`;
+            } else if (request.status === 'rejected' && request.rejectedByName) {
+                auditHtml = `<span style="color:#721c24;">✘ Rejected by ${request.rejectedByName}<br><small>${formatDate(request.rejectedAt?.toDate())}</small></span>`;
+            } else {
+                auditHtml = '<span style="color:#856404;">Pending</span>';
+            }
+
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${request.type?.charAt(0)?.toUpperCase() + request.type?.slice(1) || 'Unknown'}</td>
+                <td>${request.requestorName || 'Unknown'}</td>
+                <td>${formatDate(request.createdAt?.toDate())}</td>
+                <td><span class="status status-${request.status}">${request.status}</span></td>
+                <td>${auditHtml}</td>
+                <td>
+                    <button class="action-btn btn-view" onclick="viewRequest('${doc.id}')">View</button>
+                </td>
+            `;
+            tableBody.appendChild(row);
+        });
+
+        hideLoading();
+    } catch (error) {
+        console.error('Error loading dashboard data:', error);
+        hideLoading();
+    }
+}
 
         async function loadMyRequests() {
             if (!currentUser) return;
@@ -4559,16 +4580,36 @@
                     `;
                 }
 
-                // Show approval buttons if current user is the approver and request is pending
-                if (currentUser.uid === request.approverId && request.status === 'pending' && 
-                    checkPermission('canApproveRequests')) {
-                    html += `
-                        <div style="margin-top: 20px; display: flex; gap: 10px;">
-                            <button class="btn btn-approve" onclick="approveRequest('${requestId}')">Approve</button>
-                            <button class="btn btn-reject" onclick="rejectRequest('${requestId}')">Reject</button>
-                        </div>
-                    `;
-                }
+                // Show approval buttons — only for managers/admins who are NOT the requestor
+if (request.status === 'pending' && 
+    checkPermission('canApproveRequests') &&
+    request.requestorId !== currentUser.uid) {
+    html += `
+        <div style="margin-top: 20px; display: flex; gap: 10px;">
+            <button class="btn btn-approve" onclick="approveRequest('${requestId}')">Approve</button>
+            <button class="btn btn-reject" onclick="rejectRequest('${requestId}')">Reject</button>
+        </div>
+    `;
+}
+
+// Audit trail
+if (request.status === 'approved' && request.approvedByName) {
+    html += `
+        <div style="margin-top:15px; padding:10px; background:#d4edda; border-radius:8px;">
+            <strong>✔ Approved by:</strong> ${request.approvedByName} (${request.approvedByRole || 'manager'})<br>
+            <strong>Date:</strong> ${formatDate(request.approvedAt?.toDate())}
+        </div>
+    `;
+}
+if (request.status === 'rejected' && request.rejectedByName) {
+    html += `
+        <div style="margin-top:15px; padding:10px; background:#f8d7da; border-radius:8px;">
+            <strong>✘ Rejected by:</strong> ${request.rejectedByName} (${request.rejectedByRole || 'manager'})<br>
+            <strong>Date:</strong> ${formatDate(request.rejectedAt?.toDate())}<br>
+            <strong>Reason:</strong> ${request.rejectionReason || 'No reason provided'}
+        </div>
+    `;
+}
 
                 // Show download button if approved
                 if (request.status === 'approved') {
@@ -4589,117 +4630,118 @@
             }
         }
 
-        async function approveRequest(requestId) {
-            if (!checkPermission('canApproveRequests')) {
-                showAlert('You do not have permission to approve requests', 'error');
-                return;
-            }
+       async function approveRequest(requestId) {
+    if (!checkPermission('canApproveRequests')) {
+        showAlert('You do not have permission to approve requests', 'error');
+        return;
+    }
 
-            if (!confirm('Are you sure you want to approve this request?')) return;
+    // Fetch the request first to check ownership
+    const requestDoc = await db.collection('requests').doc(requestId).get();
+    if (!requestDoc.exists) {
+        showAlert('Request not found', 'error');
+        return;
+    }
+    const request = requestDoc.data();
 
-            showLoading('Approving request...');
-            try {
-                const updateData = {
-                    status: 'approved',
-                    approvedAt: firebase.firestore.FieldValue.serverTimestamp(),
-                    approvedBy: currentUser.uid
-                };
-                
-                // Only add approvedByName if currentUserData.name exists
-                if (currentUserData?.name) {
-                    updateData.approvedByName = currentUserData.name;
-                }
+    // Block self-approval
+    if (request.requestorId === currentUser.uid) {
+        showAlert('You cannot approve your own request.', 'error');
+        return;
+    }
 
-                await db.collection('requests').doc(requestId).update(updateData);
+    if (!confirm('Are you sure you want to approve this request?')) return;
 
-                // Get the request to notify the requestor
-                const requestDoc = await db.collection('requests').doc(requestId).get();
-                const request = requestDoc.data();
+    showLoading('Approving request...');
+    try {
+        await db.collection('requests').doc(requestId).update({
+            status: 'approved',
+            approvedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            approvedBy: currentUser.uid,
+            approvedByName: currentUserData?.name || currentUser.email,
+            approvedByRole: currentUserData?.role || 'unknown'
+        });
 
-                // Create notification for requestor
-                await createNotification(
-                    request.requestorId,
-                    'Request Approved',
-                    `Your ${request.type} request has been approved by ${currentUserData?.name || 'an approver'}`,
-                    request.type,
-                    requestId
-                );
+        await createNotification(
+            request.requestorId,
+            'Request Approved',
+            `Your ${request.type} request has been approved by ${currentUserData?.name || 'an approver'}`,
+            request.type,
+            requestId
+        );
 
-                // Reload data
-                loadDashboardData();
-                loadMyRequests();
-                loadApprovals();
-                loadNotifications();
-                loadReports();
+        loadDashboardData();
+        loadMyRequests();
+        loadApprovals();
+        loadNotifications();
+        loadReports();
 
-                // Close modal
-                document.getElementById('requestModal').style.display = 'none';
-
-                hideLoading();
-                showAlert('Request approved successfully!', 'success');
-            } catch (error) {
-                console.error('Error approving request:', error);
-                hideLoading();
-                showAlert('Error approving request: ' + error.message, 'error');
-            }
-        }
+        document.getElementById('requestModal').style.display = 'none';
+        hideLoading();
+        showAlert('Request approved successfully!', 'success');
+    } catch (error) {
+        console.error('Error approving request:', error);
+        hideLoading();
+        showAlert('Error approving request: ' + error.message, 'error');
+    }
+}
 
         async function rejectRequest(requestId) {
-            if (!checkPermission('canApproveRequests')) {
-                showAlert('You do not have permission to reject requests', 'error');
-                return;
-            }
+    if (!checkPermission('canApproveRequests')) {
+        showAlert('You do not have permission to reject requests', 'error');
+        return;
+    }
 
-            const reason = prompt('Please enter a reason for rejection:');
-            if (!reason) return;
+    const requestDoc = await db.collection('requests').doc(requestId).get();
+    if (!requestDoc.exists) {
+        showAlert('Request not found', 'error');
+        return;
+    }
+    const request = requestDoc.data();
 
-            showLoading('Rejecting request...');
-            try {
-                const updateData = {
-                    status: 'rejected',
-                    rejectedAt: firebase.firestore.FieldValue.serverTimestamp(),
-                    rejectedBy: currentUser.uid,
-                    rejectionReason: reason
-                };
-                
-                // Only add rejectedByName if currentUserData.name exists
-                if (currentUserData?.name) {
-                    updateData.rejectedByName = currentUserData.name;
-                }
+    // Block self-rejection
+    if (request.requestorId === currentUser.uid) {
+        showAlert('You cannot reject your own request.', 'error');
+        return;
+    }
 
-                await db.collection('requests').doc(requestId).update(updateData);
+    const reason = prompt('Please enter a reason for rejection:');
+    if (!reason) return;
 
-                // Get the request to notify the requestor
-                const requestDoc = await db.collection('requests').doc(requestId).get();
-                const request = requestDoc.data();
+    showLoading('Rejecting request...');
+    try {
+        await db.collection('requests').doc(requestId).update({
+            status: 'rejected',
+            rejectedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            rejectedBy: currentUser.uid,
+            rejectedByName: currentUserData?.name || currentUser.email,
+            rejectedByRole: currentUserData?.role || 'unknown',
+            rejectionReason: reason
+        });
 
-                // Create notification for requestor
-                await createNotification(
-                    request.requestorId,
-                    'Request Rejected',
-                    `Your ${request.type} request has been rejected by ${currentUserData?.name || 'an approver'}. Reason: ${reason}`,
-                    request.type,
-                    requestId
-                );
+        await createNotification(
+            request.requestorId,
+            'Request Rejected',
+            `Your ${request.type} request has been rejected by ${currentUserData?.name || 'an approver'}. Reason: ${reason}`,
+            request.type,
+            requestId
+        );
 
-                // Reload data
-                loadDashboardData();
-                loadMyRequests();
-                loadApprovals();
-                loadNotifications();
-                loadReports();
+        loadDashboardData();
+        loadMyRequests();
+        loadApprovals();
+        loadNotifications();
+        loadReports();
 
-                // Close modal
-                document.getElementById('requestModal').style.display = 'none';
-
-                hideLoading();
-                showAlert('Request rejected successfully!', 'success');
-            } catch (error) {
-                console.error('Error rejecting request:', error);
-                hideLoading();
-                showAlert('Error rejecting request: ' + error.message, 'error');
-            }
-        }
+        document.getElementById('requestModal').style.display = 'none';
+        hideLoading();
+        showAlert('Request rejected successfully!', 'success');
+    } catch (error) {
+        console.error('Error rejecting request:', error);
+        hideLoading();
+        showAlert('Error rejecting request: ' + error.message, 'error');
+    }
+}
 
         async function downloadRequest(requestId) {
             showLoading('Generating PDF...');
